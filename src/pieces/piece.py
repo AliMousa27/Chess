@@ -31,6 +31,7 @@ class Piece(metaclass=ABCMeta):
   method to change the positon of the piece
   returns nothing
   """
+  @abstractmethod
   def move(self)-> None: 
     pass
 
