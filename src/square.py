@@ -19,7 +19,7 @@ class Square():
   def __str__(self):
      if self.is_occupied:
        #for now return the first letter of the name jsut to be printed and see board layout
-       return self.occupant.name[0]
+       return f"{self.occupant.name[0]}_{str(self.occupant.color)}"
      #return a random letter just to see empty squares
      else: return "X"
      
