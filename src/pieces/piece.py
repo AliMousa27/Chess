@@ -1,19 +1,19 @@
 from abc import ABCMeta, abstractmethod
 from typing import List, Tuple
-from piece_color import Piece_Color
+from .piece_color import Piece_Color
 class Piece(metaclass=ABCMeta):
   """
   constructor to create a given piece
   Args:
     name: the name of the piece to be instantiated
-    init_position: the i ital position consisting of a tuple of 2 ints, row then column
+    position: the i ital position consisting of a tuple of 2 ints, row then column
     color: Enum to indicate the color
   """
   @abstractmethod
-  def __init__(self,name:str,init_position:tuple,color: Piece_Color) -> None:
+  def __init__(self,name:str,position:tuple,color: Piece_Color) -> None:
     super().__init__()
     self.name=name
-    self.init_position=init_position
+    self.position=position
     self.color = color
     
     
