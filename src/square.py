@@ -19,7 +19,8 @@ class Square():
   def __str__(self):
      if self.is_occupied:
        #for now return the first letter of the name jsut to be printed and see board layout
-       return f"{self.occupant.name[0]}_{str(self.occupant.color)}"
+       color_str = "B" if self.occupant.color == Piece_Color.BLACK else "W"
+       return f"{self.occupant.name[0]}_{color_str}"
      #return a random letter just to see empty squares
      else: return "X"
      
