@@ -19,7 +19,7 @@ WHITE_COLOR = 238,238,210,255
 class Board():
   def __init__(self) -> None:
     pygame.init()
-    self.board=[[None]*8 for _ in range(8)]
+    self.board: List[List[Square]]= [[None]*8 for _ in range(8)]
     self.screen = pygame.display.set_mode((SCREEN_SIZE,SCREEN_SIZE))
     self.clock = pygame.time.Clock()
     #attribute to hold the image. The key is PieceName_Color and the value is a loaded image by pygame to be rendered later
@@ -29,7 +29,7 @@ class Board():
     
   def setup(self):
     #each key is just a col and the value is a pices class over an object. This is done so we construct concrete objects with specifics colors 
-    INITAL_PIECES_MAP= {0: Rook, 1: Knight, 2: Bishop, 3: Queen, 4: King, 5:Bishop, 6: Knight, 7:Rook}
+    INITAL_PIECES_MAP: Dict[int,Type[Piece]] = {0: Rook, 1: Knight, 2: Bishop, 3: Queen, 4: King, 5:Bishop, 6: Knight, 7:Rook}
     #draw squares
     for row in range(8):
       for col in range(8):
