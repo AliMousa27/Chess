@@ -22,8 +22,6 @@ class Board():
     self.board: List[List[Square]]= [[None]*8 for _ in range(8)]
     self.screen = pygame.display.set_mode((SCREEN_SIZE,SCREEN_SIZE))
     self.clock = pygame.time.Clock()
-    #attribute to hold the image. The key is PieceName_Color and the value is a loaded image by pygame to be rendered later
-    self.piece_images  = self.load_piece_images()
     self.board: List[List[Square]] = self.setup()
     
     
@@ -54,19 +52,7 @@ class Board():
           
     pygame.display.flip()
     return self.board
-  """
-  Function to load a given pawn on a given row and col
-  Args:
-    color: The gien color to a pawn 
-    row: the row in the board
-    col: the column of the board
-  """
-  def load_pawn(self,color:Piece_Color,row:int,col:int):
-    piece = Pawn("Pawn",(row,col),color)
-    self.board[row][col]=Square(row,col,True,piece)
-    color_str = "white" if color ==Piece_Color.WHITE else "black"
-    piece_image = self.piece_images[f'pawn_{color_str}']
-    self.screen.blit(piece_image, (SIZE*col, SIZE*row))
+  
   """
   Function to load a given pawn on a given row and col
   Args:
@@ -80,31 +66,25 @@ class Board():
     #get the piece class by giving the column
     piece_class: Type[Piece] = pieces_class_map[col]
     #construct a piece
-    piece = piece_class(piece_class.__name__, (row, col), color)
+    piece = piece_class(piece_class.__name__, (row, col), color,SIZE)
     #assign the square an occupant
     self.board[row][col]=Square(row,col,True,piece)
-    color_str = "white" if color ==Piece_Color.WHITE else "black"
-    #get the image
-    piece_image = self.piece_images[f'{piece_class.__name__.lower()}_{color_str}']
-    self.screen.blit(piece_image, (SIZE*col, SIZE*row))
+    #draw the image
+    self.screen.blit(piece.image, (SIZE*col, SIZE*row))
+    
   """
-  Function to create a dict of images and the keys to these images
+  Function to load a given pawn on a given row and col
+  Args:
+    color: The gien color to a pawn 
+    row: the row in the board
+    col: the column of the board
   """
-  def load_piece_images(self):
-      #the size of each image will be divided by 8 to get the scaled down size
-      size = SCREEN_SIZE // 8
-      #the dict. Key is string Piece_color and the value is a scaled down image
-      piece_images = {}
-      pieces = ['pawn', 'rook', 'knight', 'bishop', 'queen', 'king']
-      colors = ['black', 'white']
+  def load_pawn(self,color:Piece_Color,row:int,col:int):
+    piece = Pawn("Pawn",(row,col),color,SIZE)
+    self.board[row][col]=Square(row,col,True,piece)
+    self.screen.blit(piece.image, (SIZE*col, SIZE*row))
 
-      for piece in pieces:
-          for color in colors:
-              image = pygame.image.load(fr'src/assets/{piece}_{color}.png')
-              #scale down the image and assign the key to that value
-              piece_images[f'{piece}_{color}'] = pygame.transform.scale(image, (size, size)) 
 
-      return piece_images
 
 class Game:
     def __init__(self):
