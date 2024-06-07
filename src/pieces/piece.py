@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from typing import List, Tuple
 from .piece_color import Piece_Color
+import pygame
 class Piece(metaclass=ABCMeta):
   """
   constructor to create a given piece
@@ -10,11 +11,16 @@ class Piece(metaclass=ABCMeta):
     color: Enum to indicate the color
   """
   @abstractmethod
-  def __init__(self,name:str,position:tuple,color: Piece_Color) -> None:
+  def __init__(self,name:str,position:tuple,color: Piece_Color,img_size:int) -> None:
     super().__init__()
     self.name=name
     self.position=position
     self.color = color
+    color_str = "white" if color ==Piece_Color.WHITE else "black"
+    image = pygame.image.load(fr'src/assets/{name.lower()}_{color_str}.png')
+    #scale down the image and assign the key to that value
+    self.image= pygame.transform.scale(image, (img_size, img_size)) 
+
 
     
     
