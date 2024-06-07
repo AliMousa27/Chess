@@ -15,6 +15,7 @@ class Piece(metaclass=ABCMeta):
     self.name=name
     self.position=position
     self.color = color
+
     
     
   """
