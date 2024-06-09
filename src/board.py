@@ -9,6 +9,7 @@ from pieces.queen import Queen
 from pieces.bishop import Bishop
 from pieces.pawn import Pawn
 import pygame
+
 #constants
 SCREEN_SIZE = 600
 SIZE= SCREEN_SIZE//8
@@ -31,9 +32,10 @@ class Board():
     #draw squares
     for row in range(8):
       for col in range(8):
+        self.board[row][col]=Square(row,col,False,None,SIZE)
         #adding row and col gives the alternating of squares effect
-        if (row+col)%2==0: pygame.draw.rect(self.screen, pygame.Color(GREEN_COLOR), [SIZE*col,SIZE*row,SIZE,SIZE])
-        else: pygame.draw.rect(self.screen, pygame.Color(WHITE_COLOR), [SIZE*col,SIZE*row,SIZE,SIZE])
+        if (row+col)%2==0: pygame.draw.rect(self.screen, pygame.Color(GREEN_COLOR), self.board[row][col].rect)
+        else: pygame.draw.rect(self.screen, pygame.Color(WHITE_COLOR), self.board[row][col].rect)
         
     for row in range(8):
       for col in range(8):
@@ -47,8 +49,6 @@ class Board():
           self.load_pawn(Piece_Color.WHITE,row,col)
         elif row == 7:
           self.load_important_pieces(Piece_Color.WHITE,row,col,INITAL_PIECES_MAP)
-        else:
-          self.board[row][col]=Square(row,col,False,None)
           
     pygame.display.flip()
     return self.board
@@ -67,10 +67,10 @@ class Board():
     piece_class: Type[Piece] = pieces_class_map[col]
     #construct a piece
     piece = piece_class(piece_class.__name__, (row, col), color,SIZE)
-    #assign the square an occupant
-    self.board[row][col]=Square(row,col,True,piece)
     #draw the image
     self.screen.blit(piece.image, (SIZE*col, SIZE*row))
+    self.board[row][col].occupant= piece
+    self.board[row][col].is_occupied=True
     
   """
   Function to load a given pawn on a given row and col
@@ -81,9 +81,9 @@ class Board():
   """
   def load_pawn(self,color:Piece_Color,row:int,col:int):
     piece = Pawn("Pawn",(row,col),color,SIZE)
-    self.board[row][col]=Square(row,col,True,piece)
     self.screen.blit(piece.image, (SIZE*col, SIZE*row))
-
+    self.board[row][col].occupant= piece
+    self.board[row][col].is_occupied=True
 
 
 class Game:
@@ -96,6 +96,11 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                  x, y = pygame.mouse.get_pos()
+                  for row in self.board.board:
+                    for square in row:
+                      rect = square.rect
             self.board.clock.tick(60)
         pygame.quit()
 
