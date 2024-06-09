@@ -11,7 +11,7 @@ from pieces.pawn import Pawn
 import pygame
 
 #constants
-SCREEN_SIZE = 600
+SCREEN_SIZE = 400
 SIZE= SCREEN_SIZE//8
 GREEN_COLOR = 118,150,86,255
 WHITE_COLOR = 238,238,210,255
@@ -84,29 +84,3 @@ class Board():
     self.screen.blit(piece.image, (SIZE*col, SIZE*row))
     self.board[row][col].occupant= piece
     self.board[row][col].is_occupied=True
-
-
-class Game:
-    def __init__(self):
-        self.board = Board()
-
-    def run(self):
-        running = True
-        while running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                  x, y = pygame.mouse.get_pos()
-                  for row in self.board.board:
-                    for square in row:
-                      rect = square.rect
-            self.board.clock.tick(60)
-        pygame.quit()
-
-def main():
-    game = Game()
-    game.run()
-
-if __name__ == "__main__":
-    main()
