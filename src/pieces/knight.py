@@ -7,7 +7,10 @@ class Knight(Piece):
     super().__init__(name,position,color,img_size)
   
   def calc_all_moves(self) -> List[Tuple]:
-    print("d")
+    row,col = self.position
+    directions = [(-1,2),(1,2),(-2,1),(2,1),(-2,1),(-2,-1),(2,-1),(-1,-2),(1,-2)]
+    return [(dr+row,dc+col) for dr,dc in directions if 0 <= dr+row <= 7 and 0 <= dc+col <= 7]
+
       
   def move(self) -> None:
     print("d")
