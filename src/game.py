@@ -16,16 +16,19 @@ class Game:
                   x, y = pygame.mouse.get_pos()
                   for row in self.board.board:
                     for square in row:
-                      if square.rect.collidepoint(x,y) and square.occupant:
+                      if square.rect.collidepoint(x,y):
                         self.calc_all_moves_for_click(square)
                         #now that a square is clicked we need all the moves
             self.board.clock.tick(60)
         pygame.quit()
         
     def calc_all_moves_for_click(self, square_clicked:Square):
-      if square_clicked.occupant:
-        self.board.highlight_moves(square_clicked.occupant.calc_all_moves())
-                
+        if square_clicked.occupant:
+          print("trynna highlight all koves")
+          self.board.highlight_moves(square_clicked.occupant.calc_all_moves())
+        else:
+          print("tryna restore colors")
+          self.board.restore_colors()
 def main():
     game = Game()
     game.run()
