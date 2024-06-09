@@ -25,7 +25,7 @@ class Board():
     self.screen = pygame.display.set_mode((SCREEN_SIZE,SCREEN_SIZE))
     self.clock = pygame.time.Clock()
     self.board: List[List[Square]] = self.setup()
-    
+    self.highlighted_squares = []
     
   def setup(self):
     #each key is just a col and the value is a pices class over an object. This is done so we construct concrete objects with specifics colors 
@@ -85,10 +85,22 @@ class Board():
     self.screen.blit(piece.image, (SIZE*col, SIZE*row))
     self.board[row][col].occupant= piece
     self.board[row][col].is_occupied=True
-    #possible moves is in indicies
+    
   def highlight_moves(self,possible_moves: List[Tuple]):
+    self.restore_colors()
     for row,col in possible_moves:
+      original_color = pygame.Color(GREEN_COLOR) if (row+col)%2==0 else pygame.Color(WHITE_COLOR)
+      self.highlighted_squares.append(((row, col), original_color))
+
       pygame.draw.rect(self.screen, pygame.Color("red"), self.board[row][col].rect)
       if self.board[row][col].is_occupied:
             self.screen.blit(self.board[row][col].occupant.image, (SIZE*col, SIZE*row))
     pygame.display.flip()
+
+  def restore_colors(self):
+    for (row, col), color in self.highlighted_squares:
+      pygame.draw.rect(self.screen, color, self.board[row][col].rect)
+      if self.board[row][col].is_occupied:
+            self.screen.blit(self.board[row][col].occupant.image, (SIZE*col, SIZE*row))
+    pygame.display.flip()
+    self.highlighted_squares = []
