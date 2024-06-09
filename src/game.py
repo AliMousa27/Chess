@@ -32,6 +32,7 @@ class Game:
         if isinstance(square_clicked.occupant,Bishop):
           print(f"All possible moves for the bishop at {square_clicked.occupant.position}")
           pprint(square_clicked.occupant.calc_all_moves())
+          self.board.highlight_moves(square_clicked.occupant.calc_all_moves())
           
         
       else:print("No occupant dummy")

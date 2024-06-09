@@ -1,3 +1,4 @@
+from ast import Tuple
 from square import Square
 from typing import List, Type, Dict
 from pieces.piece_color import Piece_Color
@@ -84,3 +85,10 @@ class Board():
     self.screen.blit(piece.image, (SIZE*col, SIZE*row))
     self.board[row][col].occupant= piece
     self.board[row][col].is_occupied=True
+    #possible moves is in indicies
+  def highlight_moves(self,possible_moves: List[Tuple]):
+    for row,col in possible_moves:
+      pygame.draw.rect(self.screen, pygame.Color("red"), self.board[row][col].rect)
+      if self.board[row][col].is_occupied:
+            self.screen.blit(self.board[row][col].occupant.image, (SIZE*col, SIZE*row))
+    pygame.display.flip()
