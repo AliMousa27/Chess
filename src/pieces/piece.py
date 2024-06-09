@@ -7,7 +7,7 @@ class Piece(metaclass=ABCMeta):
   constructor to create a given piece
   Args:
     name: the name of the piece to be instantiated
-    position: the i ital position consisting of a tuple of 2 ints, row then column
+    position: the inital position consisting of a tuple of 2 ints, row then column
     color: Enum to indicate the color
   """
   @abstractmethod
