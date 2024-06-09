@@ -1,6 +1,7 @@
 from pieces.piece import Piece
 from pieces.piece_color import Piece_Color
 from pygame import Rect
+from pygame import Color
 class Square():
   """
   Args:
@@ -9,11 +10,12 @@ class Square():
     is_occupied a boolean to idnicate if theres a piece in the square
   
   """
-  def __init__(self,row:int,col:int, is_occupied:bool, Occupant: Piece, size:int) -> None:
+  def __init__(self,row:int,col:int, is_occupied:bool, Occupant: Piece, size:int, color:Color) -> None:
     self.row=row
     self.col=col
     self.is_occupied=is_occupied
     self.occupant = Occupant
+    self.color=color
     self.rect = Rect(size*col,size*row,size,size)
     
   #change string representation to be printed in the board
