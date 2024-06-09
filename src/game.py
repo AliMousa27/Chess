@@ -10,6 +10,7 @@ class Game:
     def __init__(self):
         self.board = Board()
         self.highlighted_moves=[]
+        self.selected_piece = None  # Add this line
 
     def run(self):
         running = True
@@ -22,31 +23,43 @@ class Game:
                   for row in self.board.board:
                     for square in row:
                       if square.rect.collidepoint(x,y):
-                        self.calc_all_moves_for_click(square)
-                        #now that a square is clicked we need all the moves
+                        self.handle_click(square)
             self.board.clock.tick(60)
         pygame.quit()
-        
-    def calc_all_moves_for_click(self, square_clicked:Square):
-        if square_clicked.occupant:
-          all_moves=self.filter_moves(square_clicked.occupant.calc_all_moves(),square_clicked.occupant)
-          self.board.highlight_moves(all_moves,self.highlighted_moves)
-        else:
+
+    def handle_click(self, square_clicked: Square): 
+      if square_clicked.occupant:
+          self.selected_piece = square_clicked.occupant
+          self.legal_moves = self.filter_moves(self.selected_piece.calc_all_moves(), self.selected_piece)
+          self.board.highlight_moves(self.legal_moves, self.highlighted_moves)
+      elif self.selected_piece:
+          if (square_clicked.row, square_clicked.col) in self.legal_moves:
+              self.move_piece(self.selected_piece, square_clicked)
+              self.board.animate_move(self.selected_piece, square_clicked)
           self.board.restore_colors(self.highlighted_moves)
-          
-    def filter_moves(self,all_moves,piece:Piece):
-      print(all_moves)
-      #if its a knight we can just return all the moves that are not occupied by the same color 
-      #as knight can jump over pieces
-      if isinstance(piece,Knight):
-        nice = []
+          self.selected_piece = None
+          self.legal_moves = []
+
+    def move_piece(self, piece: Piece, destination: Square):  # Add this method
+        # Remove piece from current square
+        current_square: Square = self.board.board[piece.position[0]][piece.position[1]]
+        current_square.occupant = None
+        current_square.is_occupied = False
+
+        # Add piece to destination square
+        destination.occupant = piece
+        destination.is_occupied = True
+
+        # Update piece's position
+        piece.position = (destination.row, destination.col)
+
+    def filter_moves(self, all_moves, piece: Piece):  # Add this method
+        valid_moves = []
         for row, col in all_moves:
             square: Square = self.board.board[row][col]
             if not square.occupant or square.occupant.color != piece.color:
-                nice.append((row, col))
-        return nice
-      
-      
+                valid_moves.append((row, col))
+        return valid_moves
 def main():
     game = Game()
     game.run()
