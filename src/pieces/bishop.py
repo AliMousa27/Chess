@@ -9,10 +9,10 @@ class Bishop(Piece):
   def calc_all_moves(self) -> List[Tuple]:
     
     row, col = self.position
-    # top-right, top-left, bottom-right, bottom-left
+    # all the possible directions
     directions = [(1, 1), (1, -1), (-1, 1), (-1, -1)]  
-    all_moves = [(row + i * dr, col + i * dc) for dr, dc in directions for i in range(1, 9) if 0 <= row + i * dr <= 7 and 0 <= col + i * dc <= 7]
-    return all_moves
+    #return the rows and cols +i multiplied by their directions to get all possible directions
+    return [(row + i * dr, col + i * dc) for dr, dc in directions for i in range(1, 9) if 0 <= row + i * dr <= 7 and 0 <= col + i * dc <= 7]
 
 
       
