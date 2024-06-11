@@ -1,6 +1,7 @@
 from typing import List, Tuple
 from board import Board
 import pygame
+from pieces import pawn
 from pieces.pawn import Pawn
 from pieces.piece import Piece
 from pieces.knight import Knight
@@ -53,25 +54,37 @@ class Game:
 
         # Update piece's position
         piece.position = (destination.row, destination.col)
+        if isinstance(piece,Pawn): piece.has_stepped = True
 
     def filter_moves(self, all_moves, piece: Piece): 
         valid_moves = []
-        print(all_moves)
 
         if isinstance(piece,Knight):
             for row, col in all_moves:
                     square: Square = self.board.board[row][col]
                     if not square.occupant or square.occupant.color != piece.color:
-                        print(f"can moves to {row},{col}")
                         valid_moves.append((row, col))
         elif isinstance(piece,Pawn):
-            return all_moves
+            return self.filter_pawn_moves(piece,all_moves)
+            
         else: return self.filter_linear_moves(piece)
                 
                 
         return valid_moves
-           
-           
+    
+    def filter_pawn_moves(self,pawn:Pawn,all_moves):
+        col =pawn.position[1]
+        moves=[]
+        for new_row,new_col in all_moves:
+            destination_square : Square = self.board.board[new_row][new_col]
+            #add en passant move if the square is occupied by an enemy pawn thats not on the same column as the pawn
+            if new_col != col and destination_square.occupant and destination_square.occupant.color != pawn.color:
+                moves.append((new_row,new_col))
+            elif destination_square.occupant is None and new_col == col:
+                print(f"second if added {new_row},{new_col}")
+                moves.append((new_row,new_col))
+        return moves
+        
     def filter_linear_moves(self, piece: Piece):
         #row col direct
         row,col = piece.position
@@ -84,9 +97,7 @@ class Game:
                 new_row = row + i * dr
                 new_col = col + i * dc
                 if not 0<=new_row<= 7 or not 0<=new_col<=7:
-                    print(f"NOT VALID {new_row} new col {new_col}")
                     continue
-                print(f"new row {new_row} new col {new_col}")
                 destination_square : Square = self.board.board[new_row][new_col]
                 #if its occupied with the same color then skip that direction 
                 if destination_square.occupant and destination_square.occupant.color == piece.color:
