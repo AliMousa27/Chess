@@ -29,19 +29,21 @@ class Game:
         pygame.quit()
 
     def handle_click(self, square_clicked: Square): 
-      if square_clicked.occupant:
-          self.selected_piece = square_clicked.occupant
-          self.legal_moves = self.filter_moves(self.selected_piece.calc_all_moves(), self.selected_piece)
-          self.board.highlight_moves(self.legal_moves, self.highlighted_moves)
-      
-      elif self.selected_piece:
+      if self.selected_piece:
           if (square_clicked.row, square_clicked.col) in self.legal_moves:
               self.move_piece(self.selected_piece, square_clicked)
               self.board.animate_move(self.selected_piece, square_clicked)
           self.board.restore_colors(self.highlighted_moves)
           self.selected_piece = None
           self.legal_moves = []
-
+          self.print_board_state()
+          
+      elif square_clicked.occupant:
+          self.selected_piece = square_clicked.occupant
+          self.legal_moves = self.filter_moves(self.selected_piece.calc_all_moves(), self.selected_piece)
+          self.board.highlight_moves(self.legal_moves, self.highlighted_moves)
+      
+      
     def move_piece(self, piece: Piece, destination: Square):
         # Remove piece from current square
         current_square: Square = self.board.board[piece.position[0]][piece.position[1]]
@@ -115,6 +117,22 @@ class Game:
                 continue
                 
         return moves
+    
+    def print_board_state(self):
+        white_pieces = 0
+        black_pieces = 0
+        for row in self.board.board:
+            for square in row:
+                if square.occupant:
+                    piece = square.occupant
+                    print(f"Piece: {piece.name}, Color: {piece.color.name}, Position: ({piece.position[0]}, {piece.position[1]})")
+                    if piece.color == Piece_Color.WHITE:
+                        white_pieces += 1
+                    else:
+                        black_pieces += 1
+        print(f"Total white pieces: {white_pieces}")
+        print(f"Total black pieces: {black_pieces}")
+        
 def main():
     game = Game()
     game.run()
