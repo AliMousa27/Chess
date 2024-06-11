@@ -11,6 +11,7 @@ class Bishop(Piece):
     row, col = self.position
     # all the possible directions
     directions = [(1, 1), (1, -1), (-1, 1), (-1, -1)]  
+    return directions
     #return the rows and cols +i multiplied by their directions to get all possible directions
     return [(row + i * dr, col + i * dc) for dr, dc in directions for i in range(1, 9) if 0 <= row + i * dr <= 7 and 0 <= col + i * dc <= 7]
 

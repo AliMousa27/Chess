@@ -9,6 +9,7 @@ class Rook(Piece):
   def calc_all_moves(self) -> List[Tuple]:
     row, col = self.position
     directions = [(1,0),(-1,0),(0,1),(0,-1)]  
+    return directions
     all_moves = [(row + i * dr, col + i * dc) for dr, dc in directions for i in range(1, 9) if 0 <= row + i * dr <= 7 and 0 <= col + i * dc <= 7]
     return all_moves
       
