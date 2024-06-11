@@ -1,5 +1,3 @@
-
-from math import e
 from typing import List
 from board import Board
 import pygame
@@ -10,7 +8,7 @@ class Game:
     def __init__(self):
         self.board = Board()
         self.highlighted_moves=[]
-        self.selected_piece = None  # Add this line
+        self.selected_piece = None  
 
     def run(self):
         running = True
@@ -40,7 +38,7 @@ class Game:
           self.selected_piece = None
           self.legal_moves = []
 
-    def move_piece(self, piece: Piece, destination: Square):  # Add this method
+    def move_piece(self, piece: Piece, destination: Square):
         # Remove piece from current square
         current_square: Square = self.board.board[piece.position[0]][piece.position[1]]
         current_square.occupant = None
