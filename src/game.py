@@ -1,11 +1,11 @@
 from typing import List, Tuple
 from board import Board
 import pygame
-from pieces import pawn
 from pieces.pawn import Pawn
 from pieces.piece import Piece
 from pieces.knight import Knight
-from pieces.rook import Rook
+from pieces.king import King
+from pieces.piece_color import Piece_Color
 from square import Square
 class Game:
     def __init__(self):
@@ -57,32 +57,33 @@ class Game:
         if isinstance(piece,Pawn): piece.has_stepped = True
 
     def filter_moves(self, all_moves, piece: Piece): 
-        valid_moves = []
 
-        if isinstance(piece,Knight):
-            for row, col in all_moves:
-                    square: Square = self.board.board[row][col]
-                    if not square.occupant or square.occupant.color != piece.color:
-                        valid_moves.append((row, col))
-        elif isinstance(piece,Pawn):
-            return self.filter_pawn_moves(piece,all_moves)
-            
+        if isinstance(piece,Knight) or isinstance(piece,King): 
+            return self.filter_king_or_knight_moves(piece,all_moves)
+        
+        elif isinstance(piece,Pawn): return self.filter_pawn_moves(piece,all_moves)
         else: return self.filter_linear_moves(piece)
                 
                 
-        return valid_moves
+    def filter_king_or_knight_moves(self,piece,all_moves):
+        return [(row,col) for row,col in all_moves if not self.board.board[row][col].occupant or self.board.board[row][col].occupant.color != piece.color] 
     
     def filter_pawn_moves(self,pawn:Pawn,all_moves):
-        col =pawn.position[1]
+        row,col = pawn.position
         moves=[]
         for new_row,new_col in all_moves:
             destination_square : Square = self.board.board[new_row][new_col]
             #add en passant move if the square is occupied by an enemy pawn thats not on the same column as the pawn
             if new_col != col and destination_square.occupant and destination_square.occupant.color != pawn.color:
                 moves.append((new_row,new_col))
+            #linear vertgical moves checks. Check first if the columns is the same and thgat the destiuon is empty
             elif destination_square.occupant is None and new_col == col:
-                print(f"second if added {new_row},{new_col}")
-                moves.append((new_row,new_col))
+                # then check if its moving 2 squares, then check if the square infront of it is empty
+                if abs(new_row - row) == 2:
+                    if self.board.board[row + 1][col].occupant is None:
+                        moves.append((new_row,new_col))
+                else:
+                    moves.append((new_row,new_col))
         return moves
         
     def filter_linear_moves(self, piece: Piece):
