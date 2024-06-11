@@ -5,6 +5,7 @@ from pieces.pawn import Pawn
 from pieces.piece import Piece
 from pieces.knight import Knight
 from pieces.king import King
+from pieces.rook import Rook
 from pieces.piece_color import Piece_Color
 from square import Square
 class Game:
@@ -36,7 +37,6 @@ class Game:
           self.board.restore_colors(self.highlighted_moves)
           self.selected_piece = None
           self.legal_moves = []
-          self.print_board_state()
           
       elif square_clicked.occupant:
           self.selected_piece = square_clicked.occupant
@@ -45,6 +45,14 @@ class Game:
       
       
     def move_piece(self, piece: Piece, destination: Square):
+        
+        #check if its a castling move
+        if isinstance(piece, King) and destination.occupant is not None and destination.occupant.color == piece.color and destination.col == 7:
+            rook = self.board.board[destination.row][7].occupant
+            destination = self.board.board[destination.row][6]
+            self.move_piece(rook,self.board.board[destination.row][5])
+            
+        
         # Remove piece from current square
         current_square: Square = self.board.board[piece.position[0]][piece.position[1]]
         current_square.occupant = None
@@ -56,18 +64,29 @@ class Game:
 
         # Update piece's position
         piece.position = (destination.row, destination.col)
-        if isinstance(piece,Pawn): piece.has_stepped = True
+        if isinstance(piece,Pawn) or isinstance(piece,King) or isinstance(piece,Rook): piece.has_stepped = True
 
     def filter_moves(self, all_moves, piece: Piece): 
 
-        if isinstance(piece,Knight) or isinstance(piece,King): 
-            return self.filter_king_or_knight_moves(piece,all_moves)
-        
+        if isinstance(piece,Knight): 
+            return self.filter_knight_moves(piece,all_moves)
+        elif isinstance(piece,King): return self.filter_king_moves(piece,all_moves)
         elif isinstance(piece,Pawn): return self.filter_pawn_moves(piece,all_moves)
         else: return self.filter_linear_moves(piece)
                 
-                
-    def filter_king_or_knight_moves(self,piece,all_moves):
+    def filter_king_moves(self,piece:Piece,all_moves):
+        moves = [(row,col) for row,col in all_moves if not self.board.board[row][col].occupant or self.board.board[row][col].occupant.color != piece.color] 
+        #castling move
+        if not piece.has_stepped:
+            rooks_row = 0 if piece.color ==Piece_Color.BLACK else 7
+            rook_has_stepped = self.board.board[rooks_row][7].occupant.has_stepped
+            can_castle = piece.swap_with_rook(self.board.board[rooks_row],rook_has_stepped)
+            if can_castle: 
+                moves.append((rooks_row,7))
+        
+        return moves
+            
+    def filter_knight_moves(self,piece,all_moves):
         return [(row,col) for row,col in all_moves if not self.board.board[row][col].occupant or self.board.board[row][col].occupant.color != piece.color] 
     
     def filter_pawn_moves(self,pawn:Pawn,all_moves):
@@ -78,11 +97,12 @@ class Game:
             #add en passant move if the square is occupied by an enemy pawn thats not on the same column as the pawn
             if new_col != col and destination_square.occupant and destination_square.occupant.color != pawn.color:
                 moves.append((new_row,new_col))
-            #linear vertgical moves checks. Check first if the columns is the same and thgat the destiuon is empty
+            #linear vertical moves checks. Check first if the columns is the same and that the destiuon is empty
             elif destination_square.occupant is None and new_col == col:
                 # then check if its moving 2 squares, then check if the square infront of it is empty
                 if abs(new_row - row) == 2:
-                    if self.board.board[row + 1][col].occupant is None:
+                    row_direction = 1 if pawn.color == Piece_Color.BLACK else -1
+                    if self.board.board[row + row_direction][col].occupant is None:
                         moves.append((new_row,new_col))
                 else:
                     moves.append((new_row,new_col))

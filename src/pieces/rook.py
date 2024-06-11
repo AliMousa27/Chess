@@ -5,7 +5,7 @@ from typing import List, Tuple
 class Rook(Piece):
   def __init__(self,name:str,position:tuple,color: Piece_Color,img_size:int) -> None:
     super().__init__(name,position,color,img_size)
-  
+    self.has_stepped =False
   def calc_all_moves(self) -> List[Tuple]:
     row, col = self.position
     directions = [(1,0),(-1,0),(0,1),(0,-1)]  
@@ -16,6 +16,5 @@ class Rook(Piece):
   def move(self) -> None:
     print("d")
     
-  def swap_with_king(self)->None: pass
       
       
