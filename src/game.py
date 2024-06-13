@@ -36,7 +36,7 @@ class Game:
           if (square_clicked.row, square_clicked.col) in self.legal_moves:
               self.move_piece(self.selected_piece, square_clicked)
               self.board.animate_move(self.selected_piece, square_clicked)
-              #print("is CHECKED",self.is_in_check(self.board.board[0][4].occupant))
+              print("is CHECKED",self.is_in_check(self.board.board[0][4].occupant))
           self.board.restore_colors(self.highlighted_moves)
           self.selected_piece = None
           self.legal_moves = []
@@ -53,44 +53,54 @@ class Game:
 
         for enemy_piece in enemy_pieces:
             enemy_moves = enemy_piece.calc_all_moves()
-            valid_enemy_moves = self.filter_moves(enemy_moves, enemy_piece)
+            valid_enemy_moves = self.filter_moves(enemy_moves, enemy_piece, False)
             if king.position in valid_enemy_moves:
                 return True
 
         return False
-    
 
-        
-
-        
-    
-    def move_piece(self, piece: Piece, destination: Square,is_simulation=False):
-        #check if its a castling move
-        if isinstance(piece, King) and destination.occupant is not None and destination.occupant.color == piece.color and destination.col == 7:
-            rook = self.board.board[destination.row][7].occupant
-            destination = self.board.board[destination.row][6]
-            self.move_piece(rook,self.board.board[destination.row][5])
             
+
         
+    
+    def move_piece(self, piece: Piece, destination: Square, simulate=False):
+        # Save the current state
         current_square: Square = self.board.board[piece.position[0]][piece.position[1]]
+        destination_square: Square = self.board.board[destination.row][destination.col]
+        original_occupant = destination_square.occupant
+
         current_square.occupant = None
         current_square.is_occupied = False
-
-        temp = destination.occupant
-        # Add piece to destination square
-        
-        destination.occupant = piece
-        destination.is_occupied = True
-
-        # Update piece's position
+        destination_square.occupant = piece
+        destination_square.is_occupied = True
         piece.position = (destination.row, destination.col)
-        if isinstance(piece,Pawn) or isinstance(piece,King) or isinstance(piece,Rook): piece.has_stepped = True
 
-        return temp
+        if simulate:
+            # If it's a simulation, restore the original state and return the result
+            is_check = self.is_in_check(self.board.board[0][4].occupant)
+            current_square.occupant = piece
+            current_square.is_occupied = True
+            destination_square.occupant = original_occupant
+            destination_square.is_occupied = (original_occupant is not None)
+            piece.position = (current_square.row, current_square.col)
+            return is_check
+
+        # If it's not a simulation, finalize the move
+        if isinstance(piece, Pawn) or isinstance(piece, King) or isinstance(piece, Rook):
+            piece.has_stepped = True
+
         
+        
+
+    def is_pinned(self, piece, all_moves):
+        for move in all_moves:
+            destination = self.board.board[move[0]][move[1]]
+            if self.move_piece(piece, destination, simulate=True):
+                return True
+        return False
         
     
-    def filter_moves(self, all_moves, piece: Piece, check_for_pins: bool = False):
+    def filter_moves(self, all_moves, piece: Piece, check_for_pins: bool = True):
         valid_moves = []
         if isinstance(piece,Knight): 
             valid_moves= self.filter_knight_moves(piece,all_moves)
@@ -98,9 +108,9 @@ class Game:
         elif isinstance(piece,Pawn): valid_moves= self.filter_pawn_moves(piece,all_moves)
         else: valid_moves= self.filter_linear_moves(piece)
         if check_for_pins:
-            pass
-            #if self.is_pinned(piece,valid_moves):
-                #return []
+            #pass
+            if self.is_pinned(piece,valid_moves):
+                return []
         return valid_moves
                 
     def filter_king_moves(self,piece:Piece,all_moves):
