@@ -27,12 +27,13 @@ class Board():
     self.clock = pygame.time.Clock()
     self.board: List[List[Square]] = self.setup()
 
-  """
-  Method to setup board at and draw the pieces
-  Return:
-    Returns a 2D list of squares that is the board itself
-  """
+
   def setup(self) -> List[List[Square]]:
+    """
+    Method to setup board at and draw the pieces
+    Return:
+      Returns a 2D list of squares that is the board itself
+    """
     #the key is the index of the column and the value is a piece concrete class so we can construct an object from
     INITAL_PIECES_MAP: Dict[int,Type[Piece]] = {0: Rook, 1: Knight, 2: Bishop, 3: Queen, 4: King, 5:Bishop, 6: Knight, 7:Rook}
 
@@ -59,14 +60,15 @@ class Board():
     pygame.display.flip()
     return self.board
   
-  """
-  Function to draw the square on the screen given a row and column
-  Args:
-    row: integer of the columns row
-    col: integer that indicates where the square should be drawn horizontally
-  Return: void as it only draws on the screen
-  """
+
   def draw_square(self, row: int, col: int) -> None:
+    """
+    Function to draw the square on the screen given a row and column
+    Args:
+      row: integer of the columns row
+      col: integer that indicates where the square should be drawn horizontally
+    Return: void as it only draws on the screen
+    """
     square: Square = self.board[row][col]
     pygame.draw.rect(self.screen, square.color, square.rect)
     #if there is an image, draw the image on top of the square
@@ -92,6 +94,7 @@ class Board():
     self.board[row][col].is_occupied = True
     self.draw_square(row, col)
 
+  def load_pawn(self,color:Piece_Color,row:int,col:int) -> None:
     """
     Loads an pawn of a given color onto the chess board.
 
@@ -103,12 +106,13 @@ class Board():
     Returns:
       None
     """
-  def load_pawn(self,color:Piece_Color,row:int,col:int) -> None:
     piece = Pawn("Pawn",(row,col),color,SIZE)
     self.board[row][col].occupant= piece
     self.board[row][col].is_occupied=True
     self.draw_square(row, col)
     
+
+  def highlight_moves(self, possible_moves: List[Tuple], highlighted_squares: List[Tuple[Tuple[int, int], Color]]) -> None:
     """
     Highlights the possible moves on the chessboard.
 
@@ -119,7 +123,6 @@ class Board():
     Returns:
       None
     """
-  def highlight_moves(self, possible_moves: List[Tuple], highlighted_squares: List[Tuple[Tuple[int, int], Color]]) -> None:
     # clear the previous highlighted squares
     self.restore_colors(highlighted_squares)
     for row, col in possible_moves:
@@ -131,33 +134,36 @@ class Board():
       #draw the square
       self.draw_square(row, col)
     pygame.display.flip()
-  """
-  Animates the movement of a piece on the chessboard.
-  Args:
-    piece (Piece): The piece to move.
-    destination (Square): The square to move the piece to.
-  Returns:
-    None
-  """
+
   def animate_move(self, piece: Piece, destination: Square) -> None:
+    """
+    Animates the movement of a piece on the chessboard.
+    Args:
+      piece (Piece): The piece to move.
+      destination (Square): The square to move the piece to.
+    Returns:
+      None
+    """
     self.draw_board()
     self.screen.blit(piece.image, (SIZE * destination.col, SIZE * destination.row))
     pygame.display.flip()
-  """
-  Function to draw the board from scratch on the screen
-  Return: void as it only draws on the screen
-  """
+
   def draw_board(self) -> None:
+    """
+    Function to draw the board from scratch on the screen
+    Return: void as it only draws on the screen
+    """
     for row in range(8):
       for col in range(8):
         self.draw_square(row, col)
     pygame.display.flip()
-  """
-  Function to restor the colors of the previously highlighted squares
-  Args
-    highlighted_squares: List of tuples where the first element is a tuple of row and column and the second element is the color of the square
-  """
+
   def restore_colors(self,highlighted_squares : List[Tuple[Tuple[int, int], Color]]) -> None:
+    """
+    Function to restor the colors of the previously highlighted squares
+    Args
+      highlighted_squares: List of tuples where the first element is a tuple of row and column and the second element is the color of the square
+    """
     #for each square with its row column and orginal color
     for (row, col), color in highlighted_squares:
       #get the square and set the color to the original color
