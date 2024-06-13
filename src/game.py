@@ -1,5 +1,3 @@
-import copy
-from re import S, T
 from typing import List, Tuple
 from board import Board
 import pygame
@@ -10,6 +8,7 @@ from pieces.king import King
 from pieces.rook import Rook
 from pieces.piece_color import Piece_Color
 from square import Square
+
 class Game:
     def __init__(self):
         self.board = Board()
@@ -52,14 +51,11 @@ class Game:
         enemy_pieces: List[Piece] = [square.occupant for row in self.board.board for square in row if square.occupant and square.occupant.color == enemy_color]
 
         for enemy_piece in enemy_pieces:
-            enemy_moves = enemy_piece.calc_all_moves()
-            valid_enemy_moves = self.filter_moves(enemy_moves, enemy_piece, False)
+            valid_enemy_moves = self.filter_moves(enemy_piece.calc_all_moves(), enemy_piece, False)
             if king.position in valid_enemy_moves:
                 return True
 
         return False
-
-            
 
         
     
@@ -149,7 +145,6 @@ class Game:
         return moves
         
     def filter_linear_moves(self, piece: Piece):
-        #row col direct
         row,col = piece.position
         directions: Tuple[int,int] = piece.calc_all_moves()
         skip_direction = False
