@@ -17,16 +17,24 @@ class Square():
     self.occupant = Occupant
     self.color=color
     self.rect = Rect(size*col,size*row,size,size)
-    
-  #change string representation to be printed in the board
+  
+  #string representation to be printed in the board
   def __str__(self):
+
      if self.is_occupied:
        #for now return the first letter of the name jsut to be printed and see board layout
        color_str = "B" if self.occupant.color == Piece_Color.BLACK else "W"
        return f"{self.occupant.name[0]}_{color_str}"
      #return a random letter just to see empty squares
      else: return "X"
-     
-  def has_enemy_piece(self,color:Piece_Color):
+    
+
+  def has_enemy_piece(self,color:Piece_Color) -> bool:
+    """
+    Function to check if the square has an enemy piece given a color
+    Args:
+      color: the color of the piece to check the oppsoite for
+    Return: bool
+    """
     if self.occupant.color !=color: return True
     else: return False
