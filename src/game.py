@@ -1,3 +1,5 @@
+import copy
+from re import S, T
 from typing import List, Tuple
 from board import Board
 import pygame
@@ -34,18 +36,35 @@ class Game:
           if (square_clicked.row, square_clicked.col) in self.legal_moves:
               self.move_piece(self.selected_piece, square_clicked)
               self.board.animate_move(self.selected_piece, square_clicked)
+              #print("is CHECKED",self.is_in_check(self.board.board[0][4].occupant))
           self.board.restore_colors(self.highlighted_moves)
           self.selected_piece = None
           self.legal_moves = []
           
+          
       elif square_clicked.occupant:
           self.selected_piece = square_clicked.occupant
-          self.legal_moves = self.filter_moves(self.selected_piece.calc_all_moves(), self.selected_piece)
+          self.legal_moves = self.filter_moves(self.selected_piece.calc_all_moves(), self.selected_piece, True)
           self.board.highlight_moves(self.legal_moves, self.highlighted_moves)
       
-      
-    def move_piece(self, piece: Piece, destination: Square):
+    def is_in_check(self, king: King) -> bool:
+        enemy_color = Piece_Color.BLACK if king.color == Piece_Color.WHITE else Piece_Color.WHITE
+        enemy_pieces: List[Piece] = [square.occupant for row in self.board.board for square in row if square.occupant and square.occupant.color == enemy_color]
+
+        for enemy_piece in enemy_pieces:
+            enemy_moves = enemy_piece.calc_all_moves()
+            valid_enemy_moves = self.filter_moves(enemy_moves, enemy_piece)
+            if king.position in valid_enemy_moves:
+                return True
+
+        return False
+    
+
         
+
+        
+    
+    def move_piece(self, piece: Piece, destination: Square,is_simulation=False):
         #check if its a castling move
         if isinstance(piece, King) and destination.occupant is not None and destination.occupant.color == piece.color and destination.col == 7:
             rook = self.board.board[destination.row][7].occupant
@@ -53,12 +72,13 @@ class Game:
             self.move_piece(rook,self.board.board[destination.row][5])
             
         
-        # Remove piece from current square
         current_square: Square = self.board.board[piece.position[0]][piece.position[1]]
         current_square.occupant = None
         current_square.is_occupied = False
 
+        temp = destination.occupant
         # Add piece to destination square
+        
         destination.occupant = piece
         destination.is_occupied = True
 
@@ -66,19 +86,29 @@ class Game:
         piece.position = (destination.row, destination.col)
         if isinstance(piece,Pawn) or isinstance(piece,King) or isinstance(piece,Rook): piece.has_stepped = True
 
-    def filter_moves(self, all_moves, piece: Piece): 
-
+        return temp
+        
+        
+    
+    def filter_moves(self, all_moves, piece: Piece, check_for_pins: bool = False):
+        valid_moves = []
         if isinstance(piece,Knight): 
-            return self.filter_knight_moves(piece,all_moves)
-        elif isinstance(piece,King): return self.filter_king_moves(piece,all_moves)
-        elif isinstance(piece,Pawn): return self.filter_pawn_moves(piece,all_moves)
-        else: return self.filter_linear_moves(piece)
+            valid_moves= self.filter_knight_moves(piece,all_moves)
+        elif isinstance(piece,King): valid_moves= self.filter_king_moves(piece,all_moves)
+        elif isinstance(piece,Pawn): valid_moves= self.filter_pawn_moves(piece,all_moves)
+        else: valid_moves= self.filter_linear_moves(piece)
+        if check_for_pins:
+            pass
+            #if self.is_pinned(piece,valid_moves):
+                #return []
+        return valid_moves
                 
     def filter_king_moves(self,piece:Piece,all_moves):
         moves = [(row,col) for row,col in all_moves if not self.board.board[row][col].occupant or self.board.board[row][col].occupant.color != piece.color] 
         #castling move
         if not piece.has_stepped:
             rooks_row = 0 if piece.color ==Piece_Color.BLACK else 7
+            self.print_board_state()
             rook_has_stepped = self.board.board[rooks_row][7].occupant.has_stepped
             can_castle = piece.swap_with_rook(self.board.board[rooks_row],rook_has_stepped)
             if can_castle: 

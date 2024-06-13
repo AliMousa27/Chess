@@ -166,3 +166,5 @@ class Board():
       self.draw_square(row, col)
     pygame.display.flip()
     highlighted_squares = []
+    
+  
