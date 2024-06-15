@@ -1,5 +1,3 @@
-import copy
-from re import S, T
 from typing import List, Tuple
 from board import Board
 import pygame
@@ -15,6 +13,8 @@ class Game:
         self.board = Board()
         self.highlighted_moves=[]
         self.selected_piece = None  
+        self.black_pieces = [square.occupant for row in self.board.board for square in row if square.occupant and square.occupant.color == Piece_Color.BLACK]
+        self.white_pieces = [square.occupant for row in self.board.board for square in row if square.occupant and square.occupant.color == Piece_Color.WHITE]
 
     def run(self):
         running = True
@@ -44,7 +44,7 @@ class Game:
           
       elif square_clicked.occupant:
           self.selected_piece = square_clicked.occupant
-          self.legal_moves = self.filter_moves(self.selected_piece.calc_all_moves(), self.selected_piece, True)
+          self.legal_moves = self.filter_moves(self.selected_piece.calc_all_moves(), self.selected_piece)
           self.board.highlight_moves(self.legal_moves, self.highlighted_moves)
       
     def is_in_check(self, king: King) -> bool:
@@ -53,7 +53,7 @@ class Game:
 
         for enemy_piece in enemy_pieces:
             enemy_moves = enemy_piece.calc_all_moves()
-            valid_enemy_moves = self.filter_moves(enemy_moves, enemy_piece, False)
+            valid_enemy_moves = self.filter_moves(enemy_moves, enemy_piece,check_for_pins=False)
             if king.position in valid_enemy_moves:
                 return True
 
@@ -92,25 +92,20 @@ class Game:
         
         
 
-    def is_pinned(self, piece, all_moves):
-        for move in all_moves:
-            destination = self.board.board[move[0]][move[1]]
-            if self.move_piece(piece, destination, simulate=True):
-                return True
-        return False
-        
+    def is_pinned(self,piece: Piece, move:Tuple[int,int]):
+        #given a piece simulate a move to see if it causes a check
+        destination_row,destination_col = move
+        destination_square = self.board.board[destination_row][destination_col]
+        lol = self.move_piece(piece,destination_square,True)
+        return lol
     
-    def filter_moves(self, all_moves, piece: Piece, check_for_pins: bool = True):
+    def filter_moves(self, all_moves, piece: Piece,check_for_pins=True):
         valid_moves = []
         if isinstance(piece,Knight): 
-            valid_moves= self.filter_knight_moves(piece,all_moves)
+            valid_moves= self.filter_knight_moves(piece,all_moves,check_for_pins)
         elif isinstance(piece,King): valid_moves= self.filter_king_moves(piece,all_moves)
-        elif isinstance(piece,Pawn): valid_moves= self.filter_pawn_moves(piece,all_moves)
-        else: valid_moves= self.filter_linear_moves(piece)
-        if check_for_pins:
-            #pass
-            if self.is_pinned(piece,valid_moves):
-                return []
+        elif isinstance(piece,Pawn): valid_moves= self.filter_pawn_moves(piece,all_moves,check_for_pins)
+        else: valid_moves= self.filter_linear_moves(piece,check_for_pins)
         return valid_moves
                 
     def filter_king_moves(self,piece:Piece,all_moves):
@@ -126,13 +121,15 @@ class Game:
         
         return moves
             
-    def filter_knight_moves(self,piece,all_moves):
-        return [(row,col) for row,col in all_moves if not self.board.board[row][col].occupant or self.board.board[row][col].occupant.color != piece.color] 
+    def filter_knight_moves(self,piece,all_moves,check_for_pins):
+        return [(row,col) for row,col in all_moves if (not self.board.board[row][col].occupant or self.board.board[row][col].occupant.color != piece.color) and (not check_for_pins or not self.is_pinned(piece,(row,col)))] 
     
-    def filter_pawn_moves(self,pawn:Pawn,all_moves):
+    def filter_pawn_moves(self,pawn:Pawn,all_moves,check_for_pins):
         row,col = pawn.position
         moves=[]
         for new_row,new_col in all_moves:
+            if check_for_pins and self.is_pinned(pawn,(new_row,new_col)):
+                continue
             destination_square : Square = self.board.board[new_row][new_col]
             #add en passant move if the square is occupied by an enemy pawn thats not on the same column as the pawn
             if new_col != col and destination_square.occupant and destination_square.occupant.color != pawn.color:
@@ -148,7 +145,7 @@ class Game:
                     moves.append((new_row,new_col))
         return moves
         
-    def filter_linear_moves(self, piece: Piece):
+    def filter_linear_moves(self, piece: Piece,check_for_pins):
         #row col direct
         row,col = piece.position
         directions: Tuple[int,int] = piece.calc_all_moves()
@@ -166,6 +163,8 @@ class Game:
                 if destination_square.occupant and destination_square.occupant.color == piece.color:
                     skip_direction = True
                     break
+                if check_for_pins and self.is_pinned(piece,(new_row,new_col)):
+                    continue
                 elif destination_square.occupant and destination_square.occupant.color != piece.color:
                     moves.append((new_row,new_col))
                     skip_direction = True
