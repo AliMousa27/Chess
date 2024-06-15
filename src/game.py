@@ -77,7 +77,7 @@ class Game:
 
         if simulate:
             # If it's a simulation, restore the original state and return the result
-            is_check = self.is_in_check(self.board.board[0][4].occupant)
+            is_check = self.is_in_check(self.get_king(piece.color))
             current_square.occupant = piece
             current_square.is_occupied = True
             destination_square.occupant = original_occupant
@@ -103,17 +103,16 @@ class Game:
         valid_moves = []
         if isinstance(piece,Knight): 
             valid_moves= self.filter_knight_moves(piece,all_moves,check_for_pins)
-        elif isinstance(piece,King): valid_moves= self.filter_king_moves(piece,all_moves)
+        elif isinstance(piece,King): valid_moves= self.filter_king_moves(piece,all_moves,check_for_pins)
         elif isinstance(piece,Pawn): valid_moves= self.filter_pawn_moves(piece,all_moves,check_for_pins)
         else: valid_moves= self.filter_linear_moves(piece,check_for_pins)
         return valid_moves
                 
-    def filter_king_moves(self,piece:Piece,all_moves):
-        moves = [(row,col) for row,col in all_moves if not self.board.board[row][col].occupant or self.board.board[row][col].occupant.color != piece.color] 
+    def filter_king_moves(self,piece:Piece,all_moves,check_for_pins):
+        moves = [(row,col) for row,col in all_moves if (not self.board.board[row][col].occupant or self.board.board[row][col].occupant.color != piece.color) and (not check_for_pins or not self.is_pinned(piece,(row,col)))] 
         #castling move
         if not piece.has_stepped:
             rooks_row = 0 if piece.color ==Piece_Color.BLACK else 7
-            self.print_board_state()
             rook_has_stepped = self.board.board[rooks_row][7].occupant.has_stepped
             can_castle = piece.swap_with_rook(self.board.board[rooks_row],rook_has_stepped)
             if can_castle: 
@@ -176,7 +175,11 @@ class Game:
                 continue
                 
         return moves
-    
+    def get_king(self,color:Piece_Color):
+        for row in self.board.board:
+            for square in row:
+                if square.occupant and isinstance(square.occupant,King) and square.occupant.color == color:
+                    return square.occupant
     def print_board_state(self):
         white_pieces = 0
         black_pieces = 0
