@@ -13,8 +13,6 @@ class Game:
         self.board = Board()
         self.highlighted_moves=[]
         self.selected_piece = None  
-        self.black_pieces = [square.occupant for row in self.board.board for square in row if square.occupant and square.occupant.color == Piece_Color.BLACK]
-        self.white_pieces = [square.occupant for row in self.board.board for square in row if square.occupant and square.occupant.color == Piece_Color.WHITE]
 
     def run(self):
         running = True
