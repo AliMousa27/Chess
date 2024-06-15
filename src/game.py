@@ -36,7 +36,6 @@ class Game:
           if (square_clicked.row, square_clicked.col) in self.legal_moves:
               self.move_piece(self.selected_piece, square_clicked)
               self.board.animate_move(self.selected_piece, square_clicked)
-              print("is CHECKED",self.is_in_check(self.board.board[0][4].occupant))
           self.board.restore_colors(self.highlighted_moves)
           self.selected_piece = None
           self.legal_moves = []
