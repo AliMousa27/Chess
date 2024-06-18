@@ -26,6 +26,7 @@ class Board():
     self.screen = pygame.display.set_mode((SCREEN_SIZE,SCREEN_SIZE))
     self.clock = pygame.time.Clock()
     self.board: List[List[Square]] = self.setup()
+    
 
   """
   Method to setup board at and draw the pieces

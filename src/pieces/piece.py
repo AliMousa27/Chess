@@ -20,7 +20,7 @@ class Piece(metaclass=ABCMeta):
     image = pygame.image.load(fr'src/assets/{name.lower()}_{color_str}.png')
     #scale down the image and assign the key to that value
     self.image= pygame.transform.scale(image, (img_size, img_size)) 
-
+    self.possible_moves = []
 
     
     
