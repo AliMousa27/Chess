@@ -29,7 +29,7 @@ class Pawn(Piece):
     return moves
         
         
-  def filter_pawn_moves(self,board:List[List],is_pinned,check_for_pins):
+  def filter_moves(self,board:List[List],is_pinned,check_for_pins):
         row,col = self.position
         moves=[]
         for new_row,new_col in self.calc_all_moves():

@@ -3,7 +3,6 @@ from board import Board
 import pygame
 from pieces.pawn import Pawn
 from pieces.piece import Piece
-from pieces.knight import Knight
 from pieces.king import King
 from pieces.rook import Rook
 from pieces.piece_color import Piece_Color
@@ -21,14 +20,17 @@ class Game:
     def check_mate(self, color: Piece_Color) -> bool:
         king = self.get_king(color)
         valid_moves = []
+        
         for piece in self.white_pieces if color == Piece_Color.WHITE else self.black_pieces:
             valid_moves.extend(self.get_moves( piece))
         return self.is_in_check(king) and len(valid_moves) == 0
     
     def get_king(self,color:Piece_Color):
         for piece in self.white_pieces if color == Piece_Color.WHITE else self.black_pieces:
+            
             if isinstance(piece,King):
                 return piece
+            
     def is_in_check(self, king: King) -> bool:
         enemy_pieces = self.black_pieces if king.color == Piece_Color.WHITE else self.white_pieces
 
@@ -48,11 +50,7 @@ class Game:
         return self.move_piece(piece,destination_square,True)   
           
     def get_moves(self, piece: Piece,check_for_pins=True):
-        if isinstance(piece,Knight): 
-            return piece.filter_moves(self.board.board,self.is_pinned,check_for_pins)
-        elif isinstance(piece,King): return piece.filter_king_moves(self.board.board,self.is_pinned,check_for_pins)
-        elif isinstance(piece,Pawn): return piece.filter_pawn_moves(self.board.board,self.is_pinned,check_for_pins)
-        else: return piece.filter_linear_moves(self.board.board,self.is_pinned,check_for_pins)
+        return piece.filter_moves(self.board.board,self.is_pinned,check_for_pins)
 
     def move_piece(self, piece: Piece, destination: Square, simulate=False):
         # Save the current state

@@ -14,7 +14,7 @@ class King(Piece):
       
 
   
-  def filter_king_moves(self,board: List[List],is_pinned,check_for_pins:bool):
+  def filter_moves(self,board: List[List],is_pinned,check_for_pins:bool):
       moves = [(row,col) for row,col in self.calc_all_moves() if self.can_move_to_square(board,row,col,check_for_pins,is_pinned)] 
       #castling move
       if not self.has_stepped:

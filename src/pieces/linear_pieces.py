@@ -12,7 +12,7 @@ class Linear_Piece(Piece, metaclass=ABCMeta):
   def calc_all_moves(self) -> List[Tuple]:
     return self.directions
 
-  def filter_linear_moves(self, board: List[List], is_pinned, check_for_pins: bool):
+  def filter_moves(self, board: List[List], is_pinned, check_for_pins: bool):
       # row col direct
       row, col = self.position
       skip_direction = False
