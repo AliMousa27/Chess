@@ -29,7 +29,23 @@ class Pawn(Piece):
     return moves
         
         
-        
-      
-  def move(self) -> None:
-    print("d")
+  def filter_pawn_moves(self,board:List[List],is_pinned,check_for_pins):
+        row,col = self.position
+        moves=[]
+        for new_row,new_col in self.calc_all_moves():
+            if check_for_pins and is_pinned(self,(new_row,new_col)):
+                continue
+            destination_square = board[new_row][new_col]
+            #add en passant move if the square is occupied by an enemy pawn thats not on the same column as the pawn
+            if new_col != col and destination_square.occupant and destination_square.occupant.color != self.color:
+                moves.append((new_row,new_col))
+            #linear vertical moves checks. Check first if the columns is the same and that the destiuon is empty
+            elif destination_square.occupant is None and new_col == col:
+                # then check if its moving 2 squares, then check if the square infront of it is empty
+                if abs(new_row - row) == 2:
+                    row_direction = 1 if self.color == Piece_Color.BLACK else -1
+                    if board[row + row_direction][col].occupant is None:
+                        moves.append((new_row,new_col))
+                else:
+                    moves.append((new_row,new_col))
+        return moves
