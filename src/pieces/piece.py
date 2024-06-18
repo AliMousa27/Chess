@@ -36,5 +36,8 @@ class Piece(metaclass=ABCMeta):
   @abstractmethod
   def calc_all_moves(self) -> List[Tuple]:
     pass
-
+  
+  @abstractmethod
+  def filter_moves(self,board: List[List],is_pinned,check_for_pins:bool) -> List[Tuple]:
+    pass
 
