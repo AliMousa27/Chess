@@ -1,7 +1,9 @@
 from abc import ABCMeta, abstractmethod
+import random
 from typing import List, Tuple
 from .piece_color import Piece_Color
 import pygame
+
 class Piece(metaclass=ABCMeta):
   """
   constructor to create a given piece
@@ -20,7 +22,8 @@ class Piece(metaclass=ABCMeta):
     image = pygame.image.load(fr'src/assets/{name.lower()}_{color_str}.png')
     #scale down the image and assign the key to that value
     self.image= pygame.transform.scale(image, (img_size, img_size)) 
-
+    self.possible_moves = []
+    self.id = random.randint(0,1000000)
 
     
     
@@ -34,11 +37,4 @@ class Piece(metaclass=ABCMeta):
   def calc_all_moves(self) -> List[Tuple]:
     pass
 
-  """
-  method to change the positon of the piece
-  returns nothing
-  """
-  @abstractmethod
-  def move(self)-> None: 
-    pass
 
