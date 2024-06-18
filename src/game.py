@@ -48,6 +48,7 @@ class Game:
                     self.move_piece(self.selected_piece, square_clicked)
                     self.board.animate_move(self.selected_piece, square_clicked)
                     is_checked = self.check_mate(Piece_Color.WHITE)
+                    self.moves = {}
                     print(f"checking for checmate: is_checked: {is_checked}")
                     if is_checked:
                         print(f"the color {self.selected_piece.color.name} has been checkmated")
@@ -55,9 +56,11 @@ class Game:
                     
                 self.board.restore_colors(self.highlighted_moves)
                 self.selected_piece = None
-                self.moves = {}
+                
+                
             elif square_clicked.occupant:
                 self.selected_piece = square_clicked.occupant
+
                 if self.selected_piece not in self.moves:
                     self.moves[self.selected_piece] = self.filter_moves( self.selected_piece)
                 self.board.highlight_moves(self.moves[self.selected_piece], self.highlighted_moves)
