@@ -1,6 +1,7 @@
 from typing import List, Tuple
 from board import Board
 import pygame
+from pieces.bishop import Bishop
 from pieces.pawn import Pawn
 from pieces.piece import Piece
 from pieces.knight import Knight
@@ -16,6 +17,9 @@ class Game:
         self.selected_piece = None  
         self.white_pieces = [square.occupant for row in self.board.board for square in row if square.occupant and square.occupant.color == Piece_Color.WHITE]
         self.black_pieces = [square.occupant for row in self.board.board for square in row if square.occupant and square.occupant.color == Piece_Color.BLACK]
+        for i in range(len(self.white_pieces)):
+            self.white_pieces[i].possible_moves=self.filter_moves(self.white_pieces[i].calc_all_moves(),self.white_pieces[i])
+            self.black_pieces[i].possible_moves=self.filter_moves(self.black_pieces[i].calc_all_moves(),self.black_pieces[i])   
 
 
     def run(self):
@@ -36,7 +40,12 @@ class Game:
     def handle_click(self, square_clicked: Square): 
       if self.selected_piece:
           if (square_clicked.row, square_clicked.col) in self.legal_moves:
+              old_square = self.board.board[self.selected_piece.position[0]][self.selected_piece.position[1]]
               self.move_piece(self.selected_piece, square_clicked)
+              
+              for piece in self.find_affected_pieces( old_square,square_clicked):
+                    piece.possible_moves = self.filter_moves(piece.calc_all_moves(),piece)
+                    print(f"Piece: {piece.name}, Color: {piece.color.name}, Position: ({piece.position[0]}, {piece.position[1]}), Possible Moves: {piece.possible_moves}")
               self.board.animate_move(self.selected_piece, square_clicked)
           self.board.restore_colors(self.highlighted_moves)
           self.selected_piece = None
@@ -45,9 +54,26 @@ class Game:
           
       elif square_clicked.occupant:
           self.selected_piece = square_clicked.occupant
-          self.legal_moves = self.filter_moves(self.selected_piece.calc_all_moves(), self.selected_piece)
+          self.legal_moves = square_clicked.occupant.possible_moves
+          #self.legal_moves = self.filter_moves(self.selected_piece.calc_all_moves(), self.selected_piece)
           self.board.highlight_moves(self.legal_moves, self.highlighted_moves)
-      
+    
+    def find_affected_pieces(self, old_square:Square, new_square: Square):
+        #this accounts for when a piece could move to a place but now it cant
+        old_row,old_col = old_square.row,old_square.col
+        new_row, new_col = new_square.row, new_square.col
+        affected_pieces = []
+        for piece in self.white_pieces + self.black_pieces:
+            if ((new_row, new_col) in piece.possible_moves):
+                affected_pieces.append(piece)
+            #now we need to find if a piece could move in that path
+            row, col = piece.position
+            if isinstance(piece,Bishop) and (old_row,old_col) in [(row + i * dr, col + i * dc) for dr, dc in piece.directions for i in range(1, 9) if 0 <= row + i * dr <= 7 and 0 <= col + i * dc <= 7]:
+                affected_pieces.append(piece)
+        print(f"affected pieces {affected_pieces}")
+        return affected_pieces
+        
+    
     def is_in_check(self, king: King) -> bool:
         enemy_pieces = self.black_pieces if king.color == Piece_Color.WHITE else self.white_pieces
 
@@ -172,6 +198,7 @@ class Game:
                 continue
                 
         return moves
+    
     def get_king(self,color:Piece_Color):
         for row in self.board.board:
             for square in row:
