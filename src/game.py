@@ -18,6 +18,13 @@ class Game:
         self.black_pieces = [square.occupant for row in self.board.board for square in row if square.occupant and square.occupant.color == Piece_Color.BLACK]
         self.moves : Dict[Piece, List[Tuple[int,int]]] = {}
 
+    def check_mate(self, color: Piece_Color) -> bool:
+        king = self.get_king(color)
+        valid_moves = []
+        for piece in self.white_pieces if color == Piece_Color.WHITE else self.black_pieces:
+            valid_moves.extend(self.filter_moves( piece))
+        return self.is_in_check(king) and len(valid_moves) == 0
+
     def run(self):
         running = True
         while running:
@@ -40,20 +47,26 @@ class Game:
                 if (square_clicked.row, square_clicked.col) in self.moves.get(self.selected_piece, []):
                     self.move_piece(self.selected_piece, square_clicked)
                     self.board.animate_move(self.selected_piece, square_clicked)
+                    is_checked = self.check_mate(Piece_Color.WHITE)
+                    print(f"checking for checmate: is_checked: {is_checked}")
+                    if is_checked:
+                        print(f"the color {self.selected_piece.color.name} has been checkmated")
+                        exit(0)
+                    
                 self.board.restore_colors(self.highlighted_moves)
                 self.selected_piece = None
                 self.moves = {}
             elif square_clicked.occupant:
                 self.selected_piece = square_clicked.occupant
                 if self.selected_piece not in self.moves:
-                    self.moves[self.selected_piece] = self.filter_moves(self.selected_piece.calc_all_moves(), self.selected_piece)
+                    self.moves[self.selected_piece] = self.filter_moves( self.selected_piece)
                 self.board.highlight_moves(self.moves[self.selected_piece], self.highlighted_moves)
             
     def is_in_check(self, king: King) -> bool:
         enemy_pieces = self.black_pieces if king.color == Piece_Color.WHITE else self.white_pieces
 
         for enemy_piece in enemy_pieces:
-            valid_enemy_moves = self.filter_moves(enemy_piece.calc_all_moves(), enemy_piece,check_for_pins=False)
+            valid_enemy_moves = self.filter_moves( enemy_piece,check_for_pins=False)
             if king.position in valid_enemy_moves:
                 return True
 
@@ -110,7 +123,7 @@ class Game:
         
         return self.move_piece(piece,destination_square,True)
     
-    def filter_moves(self, all_moves, piece: Piece,check_for_pins=True):
+    def filter_moves(self, piece: Piece,check_for_pins=True):
         if isinstance(piece,Knight): 
             return piece.filter_moves(self.board.board,self.is_pinned,check_for_pins)
         elif isinstance(piece,King): return piece.filter_king_moves(self.board.board,self.is_pinned,check_for_pins)
@@ -120,10 +133,9 @@ class Game:
         
     
     def get_king(self,color:Piece_Color):
-        for row in self.board.board:
-            for square in row:
-                if square.occupant and isinstance(square.occupant,King) and square.occupant.color == color:
-                    return square.occupant
+        for piece in self.white_pieces if color == Piece_Color.WHITE else self.black_pieces:
+            if isinstance(piece,King):
+                return piece
     
     def print_board_state(self):
         white_pieces = 0
