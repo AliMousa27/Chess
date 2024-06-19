@@ -33,7 +33,7 @@ class Pawn(Piece):
         row,col = self.position
         moves=[]
         for new_row,new_col in self.calc_all_moves():
-            if check_for_pins and is_pinned(self,(new_row,new_col)):
+            if check_for_pins and is_pinned(self,(new_row,new_col),):
                 continue
             destination_square = board[new_row][new_col]
             #add en passant move if the square is occupied by an enemy pawn thats not on the same column as the pawn

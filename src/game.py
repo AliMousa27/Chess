@@ -30,12 +30,20 @@ class Game:
     
     def check_mate(self, color: Piece_Color) -> bool:
         king = self.get_king(color)
-        valid_moves = []
-        for piece in self.white_pieces if color == Piece_Color.WHITE else self.black_pieces:
-            moves = self.get_moves( piece)
-            valid_moves.extend(moves)
-            self.moves[piece] = moves
+        if color == Piece_Color.WHITE:
+            valid_moves = [move for piece in self.white_pieces for move in self.moves[piece]]
+        else:
+            valid_moves = [move for piece in self.black_pieces for move in self.moves[piece]]
+        
         return self.is_in_check(king) and len(valid_moves) == 0
+        #OLD IMPLEMENTATION
+        '''king = self.get_king(color)
+        valid_moves = []
+        
+        for piece in self.white_pieces if color == Piece_Color.WHITE else self.black_pieces:
+            valid_moves.extend(self.get_moves( piece))
+        return self.is_in_check(king) and len(valid_moves) == 0'''
+
     
     def get_king(self,color:Piece_Color):
         for piece in self.white_pieces if color == Piece_Color.WHITE else self.black_pieces:
@@ -44,27 +52,25 @@ class Game:
                 return piece
             
     def is_in_check(self, king: King) -> bool:
-        enemy_pieces = self.black_pieces if king.color == Piece_Color.WHITE else self.white_pieces
 
+        enemy_pieces = self.black_pieces if king.color == Piece_Color.WHITE else self.white_pieces        
         for enemy_piece in enemy_pieces:
             valid_enemy_moves = self.get_moves( enemy_piece,check_for_pins=False)
             if king.position in valid_enemy_moves:
                 return True
-
         return False
     
     def is_pinned(self,piece: Piece, move:Tuple[int,int]):
         #given a piece simulate a move to see if it causes a check
         destination_row,destination_col = move
         destination_square = self.board.board[destination_row][destination_col]
-        
-        
         return self.move_piece(piece,destination_square,True)   
           
     def get_moves(self, piece: Piece,check_for_pins=True):
         return piece.filter_moves(self.board.board,self.is_pinned,check_for_pins)
 
     def move_piece(self, piece: Piece, destination: Square, simulate=False):
+        
         # Save the current state
         current_square: Square = self.board.board[piece.position[0]][piece.position[1]]
         destination_square: Square = self.board.board[destination.row][destination.col]
@@ -80,9 +86,9 @@ class Game:
             self.white_pieces.remove(original_occupant)
         elif original_occupant and original_occupant.color == Piece_Color.BLACK:
             self.black_pieces.remove(original_occupant)
+            
 
         if simulate:
-            
             # If it's a simulation, restore the original state and return the result
             is_check = self.is_in_check(self.get_king(piece.color))
             current_square.occupant = piece
@@ -94,13 +100,12 @@ class Game:
             if original_occupant and original_occupant.color == Piece_Color.WHITE:
                 self.white_pieces.append(original_occupant)
             elif original_occupant and original_occupant.color == Piece_Color.BLACK:
+                
                 self.black_pieces.append(original_occupant)
-            
             return is_check
 
         # If it's not a simulation, finalize the move
-        if isinstance(piece, Pawn) or isinstance(piece, King) or isinstance(piece, Rook):
-            piece.has_stepped = True
+        if isinstance(piece,Pawn) or isinstance(piece,King) or isinstance(piece,Rook): piece.has_stepped = True
         #pawn promotion 
         if isinstance(piece, Pawn) and ((piece.color == Piece_Color.BLACK and piece.position[0] == 7) or (piece.color == Piece_Color.WHITE and piece.position[0] == 0)):
             self.promote(piece,destination)
@@ -147,10 +152,11 @@ class Game:
                 if (square_clicked.row, square_clicked.col) in self.moves.get(self.selected_piece, []):
                     self.move_piece(self.selected_piece, square_clicked)
                     self.board.animate_move(self.selected_piece, square_clicked)
-                    color = Piece_Color.WHITE if self.white_turn else Piece_Color.BLACK
+                    color_being_attacked = Piece_Color.BLACK if self.white_turn else Piece_Color.WHITE
                     self.white_turn = not self.white_turn
-                    is_checked = self.check_mate(color)
-                    print(f"checking for checmate: is_checked: {is_checked}")
+                    self.setup()
+                    is_checked = self.check_mate(color_being_attacked)
+                    print(f"Is {color_being_attacked.name} in check: {is_checked}")
                     if is_checked:
                         print(f"the color {self.selected_piece.color.name} has been checkmated")
                         exit(0)
@@ -171,15 +177,14 @@ class Game:
     def print_board_state(self):
         white_pieces = 0
         black_pieces = 0
-        for row in self.board.board:
-            for square in row:
-                if square.occupant:
-                    piece = square.occupant
-                    print(f"Piece: {piece.name}, Color: {piece.color.name}, Position: ({piece.position[0]}, {piece.position[1]})")
-                    if piece.color == Piece_Color.WHITE:
-                        white_pieces += 1
-                    else:
-                        black_pieces += 1
+        for piece in self.white_pieces + self.black_pieces:
+            
+            
+            if piece.color == Piece_Color.WHITE:
+                white_pieces += 1
+            else:
+                black_pieces += 1
+                print(f"Piece: {piece.name}, Color: {piece.color.name}, Position: ({piece.position[0]}, {piece.position[1]})")
         print(f"Total white pieces: {white_pieces}")
         print(f"Total black pieces: {black_pieces}")
         
