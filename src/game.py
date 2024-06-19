@@ -16,13 +16,22 @@ class Game:
         self.white_pieces = [square.occupant for row in self.board.board for square in row if square.occupant and square.occupant.color == Piece_Color.WHITE]
         self.black_pieces = [square.occupant for row in self.board.board for square in row if square.occupant and square.occupant.color == Piece_Color.BLACK]
         self.moves : Dict[Piece, List[Tuple[int,int]]] = {}
+        self.white_turn= True
+        self.setup()
+        
 
+    def setup(self):
+        for piece in self.white_pieces + self.black_pieces:
+            moves = self.get_moves( piece)
+            self.moves[piece] = moves
+    
     def check_mate(self, color: Piece_Color) -> bool:
         king = self.get_king(color)
         valid_moves = []
-        
         for piece in self.white_pieces if color == Piece_Color.WHITE else self.black_pieces:
-            valid_moves.extend(self.get_moves( piece))
+            moves = self.get_moves( piece)
+            valid_moves.extend(moves)
+            self.moves[piece] = moves
         return self.is_in_check(king) and len(valid_moves) == 0
     
     def get_king(self,color:Piece_Color):
@@ -112,8 +121,9 @@ class Game:
                 if (square_clicked.row, square_clicked.col) in self.moves.get(self.selected_piece, []):
                     self.move_piece(self.selected_piece, square_clicked)
                     self.board.animate_move(self.selected_piece, square_clicked)
-                    is_checked = self.check_mate(Piece_Color.WHITE)
-                    self.moves = {}
+                    color = Piece_Color.WHITE if self.white_turn else Piece_Color.BLACK
+                    self.white_turn = not self.white_turn
+                    is_checked = self.check_mate(color)
                     print(f"checking for checmate: is_checked: {is_checked}")
                     if is_checked:
                         print(f"the color {self.selected_piece.color.name} has been checkmated")
@@ -123,13 +133,13 @@ class Game:
                 self.selected_piece = None
                 
                 
-            elif square_clicked.occupant:
+            elif square_clicked.occupant and square_clicked.occupant.color == Piece_Color.WHITE and self.white_turn:
                 self.selected_piece = square_clicked.occupant
-
-                if self.selected_piece not in self.moves:
-                    self.moves[self.selected_piece] = self.get_moves( self.selected_piece)
                 self.board.highlight_moves(self.moves[self.selected_piece], self.highlighted_moves)
-            
+                
+            elif square_clicked.occupant and square_clicked.occupant.color == Piece_Color.BLACK and not self.white_turn:
+                self.selected_piece = square_clicked.occupant
+                self.board.highlight_moves(self.moves[self.selected_piece], self.highlighted_moves)
 
     def print_board_state(self):
         white_pieces = 0
