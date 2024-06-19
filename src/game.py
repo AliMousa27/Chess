@@ -1,9 +1,12 @@
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Type
 from board import Board
 import pygame
+from pieces.bishop import Bishop
+from pieces.knight import Knight
 from pieces.pawn import Pawn
 from pieces.piece import Piece
 from pieces.king import King
+from pieces.queen import Queen
 from pieces.rook import Rook
 from pieces.piece_color import Piece_Color
 from square import Square
@@ -98,7 +101,30 @@ class Game:
         # If it's not a simulation, finalize the move
         if isinstance(piece, Pawn) or isinstance(piece, King) or isinstance(piece, Rook):
             piece.has_stepped = True
-
+        #pawn promotion 
+        if isinstance(piece, Pawn) and ((piece.color == Piece_Color.BLACK and piece.position[0] == 7) or (piece.color == Piece_Color.WHITE and piece.position[0] == 0)):
+            self.promote(piece,destination)
+            
+    def promote(self,piece:Piece, destination:Square):
+        choice=-1
+        while not (0 < choice < 5):
+            try:
+                choice = int(input("Choose piece to promote to:\n1.Queen\n2.Rook\n3.Bishop\n4.Knight"))
+            except Exception as e:
+                print("Invalid choice. Please put number between 1-4")
+                
+        CHOICES_MAP: Dict[int,Type[Piece]] = {1: Queen, 2: Rook, 3: Bishop, 4:Knight }
+        piece_class: Type[Piece] = CHOICES_MAP[choice]
+        new_piece : Piece = piece_class(piece_class.__name__, piece.position, piece.color, 50)
+        destination.occupant = new_piece
+        
+        if piece.color == Piece_Color.BLACK:
+            self.black_pieces.remove(piece)
+            self.black_pieces.append(new_piece)
+        else:
+            self.white_pieces.remove(piece)
+            self.white_pieces.append(new_piece)
+        
     def run(self):
         running = True
         while running:
@@ -131,7 +157,8 @@ class Game:
                     
                 self.board.restore_colors(self.highlighted_moves)
                 self.selected_piece = None
-                
+            
+            
                 
             elif square_clicked.occupant and square_clicked.occupant.color == Piece_Color.WHITE and self.white_turn:
                 self.selected_piece = square_clicked.occupant

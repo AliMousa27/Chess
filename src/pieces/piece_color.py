@@ -1,5 +1,5 @@
 from enum import Enum
 
 class Piece_Color(Enum):
-  WHITE=0
-  BLACK=1
+  WHITE=1
+  BLACK=-1
