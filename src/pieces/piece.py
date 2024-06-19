@@ -41,3 +41,5 @@ class Piece(metaclass=ABCMeta):
   def filter_moves(self,board: List[List],is_pinned,check_for_pins:bool) -> List[Tuple]:
     pass
 
+'''  def __eq__(self, other):
+    return self.name == other.name and self.position == other.position and self.color == other.color'''
