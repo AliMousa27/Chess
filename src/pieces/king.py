@@ -18,11 +18,7 @@ class King(Piece):
       moves = [(row,col) for row,col in self.calc_all_moves() if self.can_move_to_square(board,row,col,check_for_pins,is_pinned)] 
       #castling move
       if not self.has_stepped:
-          rooks_row = 0 if self.color ==Piece_Color.BLACK else 7
-          rook_has_stepped = board[rooks_row][7].occupant.has_stepped
-          
-          if self.can_swap_with_rook(board[rooks_row],rook_has_stepped): 
-              moves.append((rooks_row,7))
+          pass
       return moves
   
   def can_swap_with_rook(self,row,rook_has_stepped: bool) -> bool:

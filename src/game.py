@@ -36,21 +36,7 @@ class Game:
             valid_moves = [move for piece in self.black_pieces for move in self.moves[piece]]
         
         return self.is_in_check(king) and len(valid_moves) == 0
-        #OLD IMPLEMENTATION
-        '''king = self.get_king(color)
-        valid_moves = []
-        
-        for piece in self.white_pieces if color == Piece_Color.WHITE else self.black_pieces:
-            valid_moves.extend(self.get_moves( piece))
-        return self.is_in_check(king) and len(valid_moves) == 0'''
-
-    
-    def get_king(self,color:Piece_Color):
-        for piece in self.white_pieces if color == Piece_Color.WHITE else self.black_pieces:
-            
-            if isinstance(piece,King):
-                return piece
-            
+  
     def is_in_check(self, king: King) -> bool:
 
         enemy_pieces = self.black_pieces if king.color == Piece_Color.WHITE else self.white_pieces        
@@ -59,7 +45,14 @@ class Game:
             if king.position in valid_enemy_moves:
                 return True
         return False
+
     
+    def get_king(self,color:Piece_Color):
+        for piece in self.white_pieces if color == Piece_Color.WHITE else self.black_pieces:
+            
+            if isinstance(piece,King):
+                return piece
+            
     def is_pinned(self,piece: Piece, move:Tuple[int,int]):
         #given a piece simulate a move to see if it causes a check
         destination_row,destination_col = move
@@ -70,6 +63,8 @@ class Game:
         return piece.filter_moves(self.board.board,self.is_pinned,check_for_pins)
 
     def move_piece(self, piece: Piece, destination: Square, simulate=False):
+        #castling move
+        
         
         # Save the current state
         current_square: Square = self.board.board[piece.position[0]][piece.position[1]]
@@ -174,19 +169,6 @@ class Game:
                 self.selected_piece = square_clicked.occupant
                 self.board.highlight_moves(self.moves[self.selected_piece], self.highlighted_moves)
 
-    def print_board_state(self):
-        white_pieces = 0
-        black_pieces = 0
-        for piece in self.white_pieces + self.black_pieces:
-            
-            
-            if piece.color == Piece_Color.WHITE:
-                white_pieces += 1
-            else:
-                black_pieces += 1
-                print(f"Piece: {piece.name}, Color: {piece.color.name}, Position: ({piece.position[0]}, {piece.position[1]})")
-        print(f"Total white pieces: {white_pieces}")
-        print(f"Total black pieces: {black_pieces}")
         
 def main():
     game = Game()
