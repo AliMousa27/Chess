@@ -1,7 +1,7 @@
 from .piece import Piece
 from .piece_color import Piece_Color
 from typing import List, Tuple
-from typing import Callable
+import numpy as np
 class Knight(Piece):
   def __init__(self, name: str, position: tuple, color: Piece_Color, img_size: int) -> None:
     super().__init__(name, position, color, img_size)
