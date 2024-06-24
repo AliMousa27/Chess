@@ -1,6 +1,5 @@
 from .linear_pieces import Linear_Piece
 from .piece_color import Piece_Color
-from typing import List, Tuple
 
 class Rook(Linear_Piece):
   def __init__(self,name:str,position:tuple,color: Piece_Color,img_size:int) -> None:

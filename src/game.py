@@ -140,15 +140,15 @@ class Game:
         destination_square.occupant = piece
         destination_square.is_occupied = True
         piece.position = (destination.row, destination.col)
-        
         # remove from the list if the piece is captured
-        if original_occupant and original_occupant.color == Piece_Color.WHITE:
+        if original_occupant and original_occupant.color == Piece_Color.WHITE and not isinstance(original_occupant,King):
             self.white_pieces.remove(original_occupant)
-        elif original_occupant and original_occupant.color == Piece_Color.BLACK:
+        elif original_occupant and original_occupant.color == Piece_Color.BLACK and not isinstance(original_occupant,King):
             self.black_pieces.remove(original_occupant)
             
 
         if simulate:
+                
             # If it's a simulation, restore the original state and return the result
             is_check = self.is_in_check(self.get_king(piece.color))
             current_square.occupant = piece
@@ -160,7 +160,6 @@ class Game:
             if original_occupant and original_occupant.color == Piece_Color.WHITE:
                 self.white_pieces.append(original_occupant)
             elif original_occupant and original_occupant.color == Piece_Color.BLACK:
-                
                 self.black_pieces.append(original_occupant)
             return is_check
 
