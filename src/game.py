@@ -20,11 +20,12 @@ class Game:
         self.black_pieces = [square.occupant for row in self.board.board for square in row if square.occupant and square.occupant.color == Piece_Color.BLACK]
         self.moves : Dict[Piece, List[Tuple[int,int]]] = {}
         self.white_turn= True
-        self.setup()
+        self.setup(Piece_Color.WHITE)
         
 
-    def setup(self):
-        for piece in self.white_pieces + self.black_pieces:
+    def setup(self, color: Piece_Color):
+        list_to_use = self.white_pieces if color == Piece_Color.WHITE else self.black_pieces
+        for piece in list_to_use:
             moves = self.get_moves( piece)
             self.moves[piece] = moves
     
@@ -149,7 +150,8 @@ class Game:
                     self.board.animate_move(self.selected_piece, square_clicked)
                     color_being_attacked = Piece_Color.BLACK if self.white_turn else Piece_Color.WHITE
                     self.white_turn = not self.white_turn
-                    self.setup()
+                    color = Piece_Color.WHITE if self.white_turn else Piece_Color.BLACK
+                    self.setup(color)
                     is_checked = self.check_mate(color_being_attacked)
                     print(f"Is {color_being_attacked.name} in check: {is_checked}")
                     if is_checked:
