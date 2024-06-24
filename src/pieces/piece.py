@@ -5,15 +5,16 @@ from .piece_color import Piece_Color
 import pygame
 
 class Piece(metaclass=ABCMeta):
-  """
-  constructor to create a given piece
-  Args:
-    name: the name of the piece to be instantiated
-    position: the inital position consisting of a tuple of 2 ints, row then column
-    color: Enum to indicate the color
-  """
+
   @abstractmethod
   def __init__(self,name:str,position:tuple,color: Piece_Color,img_size:int) -> None:
+    """
+    constructor to create a given piece
+    Args:
+      name: the name of the piece to be instantiated
+      position: the inital position consisting of a tuple of 2 ints, row then column
+      color: Enum to indicate the color
+    """
     super().__init__()
     self.name=name
     self.position=position
@@ -27,19 +28,17 @@ class Piece(metaclass=ABCMeta):
 
     
     
-  """
-  method to calculate all possible moves regardless if they are valid or not
-  
-  Return:
-	a list of tuples where the piece can move in terms of rows and columns
-  """
+
   @abstractmethod
   def calc_all_moves(self) -> List[Tuple]:
+    """
+    method to calculate all possible moves regardless if they are valid or not
+    
+    Return:
+    a list of tuples where the piece can move in terms of rows and columns
+    """
     pass
   
   @abstractmethod
   def filter_moves(self,board: List[List],is_pinned,check_for_pins:bool) -> List[Tuple]:
     pass
-
-'''  def __eq__(self, other):
-    return self.name == other.name and self.position == other.position and self.color == other.color'''

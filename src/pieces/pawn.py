@@ -8,7 +8,7 @@ class Pawn(Piece):
     self.has_stepped=False
   
   def calc_all_moves(self) -> List[Tuple]:
-    #for a pawn, we will include the en passant moves and filter them out in game logic
+    #for a pawn, we will include the capturing piece moves and filter them out in game logic
     row,col = self.position
     directions = [(1,1),(-1,-1),(1,0),(-1,0),(-1,1),(1,-1)]
     moves=[]
