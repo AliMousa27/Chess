@@ -29,12 +29,3 @@ class Square():
      else: return "X"
     
 
-  def has_enemy_piece(self,color:Piece_Color) -> bool:
-    """
-    Function to check if the square has an enemy piece given a color
-    Args:
-      color: the color of the piece to check the oppsoite for
-    Return: bool
-    """
-    if self.occupant.color !=color: return True
-    else: return False
