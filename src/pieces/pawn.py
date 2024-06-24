@@ -3,6 +3,51 @@ from .piece_color import Piece_Color
 from typing import List, Tuple
 
 class Pawn(Piece):
+  """
+  Represents a pawn chess piece.
+
+  Attributes:
+    name (str): The name of the pawn.
+    position (tuple): The current position of the pawn on the chessboard.
+    color (Piece_Color): The color of the pawn (BLACK or WHITE).
+    img_size (int): The size of the pawn's image.
+
+  Methods:
+    __init__(self, name: str, position: tuple, color: Piece_Color, img_size: int) -> None:
+      Initializes a new instance of the Pawn class.
+    calc_all_moves(self) -> List[Tuple]:
+      Calculates all possible moves for the pawn.
+    filter_moves(self, board: List[List], is_pinned, check_for_pins) -> List[Tuple]:
+      Filters the possible moves based on the current board state.
+
+  """
+
+  def __init__(self, name: str, position: tuple, color: Piece_Color, img_size: int) -> None:
+    """
+    Initializes a new instance of the Pawn class.
+
+    Args:
+      name (str): The name of the pawn.
+      position (tuple): The current position of the pawn on the chessboard.
+      color (Piece_Color): The color of the pawn (BLACK or WHITE).
+      img_size (int): The size of the pawn's image.
+
+    Returns:
+      None
+    """
+    super().__init__(name, position, color, img_size)
+    self.has_stepped = False
+
+  def calc_all_moves(self) -> List[Tuple]:
+    """
+    Calculates all possible moves for the pawn.
+
+    Returns:
+      List[Tuple]: A list of tuples representing the possible moves for the pawn.
+    """
+
+    # Code for filtering the possible moves based on the current board state
+class Pawn(Piece):
   def __init__(self,name:str,position:tuple,color: Piece_Color,img_size:int) -> None:
     super().__init__(name,position,color,img_size)
     self.has_stepped=False
