@@ -60,32 +60,6 @@ class ChessModel(nn.Module):
                 board_matrix[row, col, plane] = 1
         #return a tensor of the board_matrix and change 8 8 12 to 12 8 8 to represent pieces on the board
         return torch.tensor(board_matrix, dtype=torch.float32).permute(2, 0, 1) 
-    
-    def train(self, games_dataset, criterion, optimizer, num_epochs, device):
-        self.to(device)  # Move self to device
-
-        for epoch in range(num_epochs):
-            for game in games_dataset:
-                board = chess.Board()
-                for move in game.mainline_moves():
-                    board_tensor = self.board_to_tensor(board).unsqueeze(0).to(device)  
-
-                    target_vector = torch.tensor(encode_move(move), dtype=torch.float32).unsqueeze(0).to(device) 
-                    optimizer.zero_grad()
-
-                    output = self(board_tensor)
-
-                    loss = criterion(output, target_vector)
-
-                    loss.backward()
-                    optimizer.step()
-                    
-
-                    print(f"Epoch {epoch}, Loss: {loss.item()}")
-
-                    board.push(move)
-    
-
 
 def encode_move(move: chess.Move) -> np.array:
     return np.array([1 if i == move.from_square * 64 + move.to_square else 0 for i in range(64*64)])
@@ -112,7 +86,7 @@ def decode_move(encoded_move: np.array,board: chess.Board) -> chess.Move:
 
 
 # Assuming the rest of the code and necessary imports are already in place
-def load_games(path,limit=50):
+def load_games(path,limit=500):
         games = []
         with open(path) as pgn_file:
             for _ in range(limit):
@@ -122,6 +96,31 @@ def load_games(path,limit=50):
                 games.append(game)
         return games
 
+def train(model, games_dataset, criterion, optimizer, num_epochs, device):
+    model.to(device)  # Move model to device
+    for epoch in range(num_epochs):
+        for game in games_dataset:
+            board = chess.Board()
+            for move in game.mainline_moves():
+                board_tensor = model.board_to_tensor(board).unsqueeze(0).to(device)  
+
+                target_vector = torch.tensor(encode_move(move), dtype=torch.float32).unsqueeze(0).to(device) 
+                optimizer.zero_grad()
+
+                output = model(board_tensor)
+
+                loss = criterion(output, target_vector)
+
+                loss.backward()
+                optimizer.step()
+                    
+
+                print(f"Epoch {epoch}, Loss: {loss.item()}")
+
+                board.push(move)
+
+
+
 path = __file__.replace("AI.py","data.pgn")
 
 model = ChessModel()
@@ -130,7 +129,7 @@ criterion = nn.BCELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 games_dataset=load_games(path)
-model.train( games_dataset, criterion, optimizer, num_epochs=3, device=device)
+train( model,games_dataset, criterion, optimizer, num_epochs=3, device=device)
 
 test_game=games_dataset[0]
 board = chess.Board()
@@ -142,14 +141,3 @@ for move in test_game.mainline_moves():
     board.push(move)
 
 
-
-'''model = ChessModel()
-matrix_test = model.board_to_tensor(board)
-result = model(matrix_test.unsqueeze(0))
-print(f"The shape is {result.shape} and the result is {result}")
-
-move = chess.Move.from_uci("e2e4")
-encoded_move = encode_move(move)
-decoded_move = decode_move(encoded_move)
-
-print(f"the decoded move is {decoded_move}")'''
