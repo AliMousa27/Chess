@@ -64,29 +64,32 @@ class ChessModel(nn.Module):
 def encode_move(move: chess.Move) -> np.array:
     return np.array([1 if i == move.from_square * 64 + move.to_square else 0 for i in range(64*64)])
 
-def decode_move(encoded_move: np.array,board: chess.Board) -> chess.Move:
-    #create a list of 64*64 zeros to represent all possible moves
-    encoded_legal_moves = [0 for _ in range(64*64)]
-    #iterate over all the legal moves and set the index of the move to 1 to show all possible LEGAL MOVES
-    for move in board.legal_moves:
-        encoded_legal_moves[move.from_square*64 + move.to_square] = 1
-    
-    #set the encoded move to 0 if it is not a legal move
+def decode_move(encoded_move: np.array, board: chess.Board) -> chess.Move:
+    # Generate a list of legal moves from the current board state
+    legal_moves = list(board.legal_moves)
+
+    # Create a list of zeros for all possible moves
+    encoded_legal_moves = np.zeros(64*64)
+
+    # Iterate over all legal moves and set the index of the move to 1
+    for move in legal_moves:
+        encoded_legal_moves[move.from_square * 64 + move.to_square] = 1
+
+    # Multiply the encoded move with encoded_legal_moves to keep only legal moves
     encoded_move = np.multiply(encoded_move, encoded_legal_moves)
-    
-    #get the index of the max value in the encoded move and 
-    #use divmod to get the from and to square to reverse the encoding
-    from_square,to_square = divmod(np.argmax(encoded_move), 64)
-    
-    if all(encoded_move == 0):
-        print(f"ajkefbeabfuewkfbhoewrjkfhleOIWEUBIK")
+
+    # If all encoded move elements are 0, return None indicating no legal move found
+    if np.all(encoded_move == 0):
         return None
-    
+
+    # Get the index of the max value in the encoded move and decode it
+    from_square, to_square = divmod(np.argmax(encoded_move), 64)
     return chess.Move(from_square, to_square)
 
 
+
 # Assuming the rest of the code and necessary imports are already in place
-def load_games(path,limit=500):
+def load_games(path,limit=5000):
         games = []
         with open(path) as pgn_file:
             for _ in range(limit):
@@ -97,7 +100,7 @@ def load_games(path,limit=500):
         return games
 
 def train(model, games_dataset, criterion, optimizer, num_epochs, device):
-    model.to(device)  # Move model to device
+    model.to(device)
     for epoch in range(num_epochs):
         for game in games_dataset:
             board = chess.Board()
@@ -129,15 +132,24 @@ criterion = nn.BCELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 games_dataset=load_games(path)
-train( model,games_dataset, criterion, optimizer, num_epochs=3, device=device)
 
-test_game=games_dataset[0]
+
+train( model,games_dataset, criterion, optimizer, num_epochs=20, device=device)
+
+test_game = games_dataset[0]
 board = chess.Board()
 for move in test_game.mainline_moves():
     board_tensor = model.board_to_tensor(board).unsqueeze(0).to(device)
     output = model(board_tensor)
-    decoded_move = decode_move(output.cpu().detach().numpy()[0],board)
-    print(f"Predicted move: {decoded_move}, Actual move: {move}")
-    board.push(move)
+    decoded_move = decode_move(output.cpu().detach().numpy()[0], board)
 
-
+    if decoded_move is None:
+        print("Illegal move detected. Skipping.")
+        continue
+    
+    # Check if the decoded move is legal on the current board
+    if decoded_move in board.legal_moves:
+        print(f"Predicted move: {decoded_move}, Actual move: {move}")
+        board.push(decoded_move)
+    else:
+        print(f"Invalid move predicted: {decoded_move}. Skipping.")
