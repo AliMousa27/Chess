@@ -1,3 +1,4 @@
+from math import e
 import chess
 import numpy as np
 import torch
@@ -5,8 +6,8 @@ import torch.nn as nn
 import chess.pgn
 from torch import optim
 from torch.utils.data import Dataset
-
-from Ai.data_handler import ChessDataset
+import time
+from data_handler import ChessDataset
 
 
 class ChessModel(nn.Module):
@@ -63,6 +64,11 @@ class ChessModel(nn.Module):
                 board_matrix[row, col, plane] = 1
         #return a tensor of the board_matrix and change 8 8 12 to 12 8 8 to represent pieces on the board
         return torch.tensor(board_matrix, dtype=torch.float32).permute(2, 0, 1) 
+
+model = torch.load(__file__.replace("AI.py","model.pth"))
+print(f"Model loaded: {model}")
+
+
 
 def encode_move(move: chess.Move) -> np.array:
     return np.array([1 if i == move.from_square * 64 + move.to_square else 0 for i in range(64*64)])
@@ -126,18 +132,22 @@ def train(model, dataloader, criterion, optimizer, num_epochs, device):
         print(f"Epoch {epoch+1}/{num_epochs}, Loss: {avg_loss:.4f}")
 
 
-path = __file__.replace("AI.py","data.pgn")
+data_path = __file__.replace("AI.py","data.pgn")
 
 model = ChessModel()
 #binary cross entropy loss
 criterion = nn.BCELoss()  
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-games_dataset = ChessDataset(path)
 
+start_time = time.time()
+games_dataset = ChessDataset(data_path)
+end_time=time.time()
+print(f"Time taken to load the dataset is {end_time-start_time}")
 
-train( model,games_dataset, criterion, optimizer, num_epochs=50, device=device)
-model._save_to_state_dict("model.pth")
+train( model,games_dataset, criterion, optimizer, num_epochs=2, device=device)
+torch.save(model, "model.pth")
+#model=torch.load(r"c:\Users\k876y\OneDrive\Desktop\chess\src\Ai\model.pth")
 test_game = games_dataset.games[0]
 
 board = chess.Board()

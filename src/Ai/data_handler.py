@@ -3,6 +3,7 @@ from torch.utils.data import Dataset
 
 class ChessDataset(Dataset):
     def __init__(self, path:str):
+        print(f"The path is {path}")
         self.games = self.load_games(path)
     
     def __len__(self):
@@ -25,10 +26,10 @@ class ChessDataset(Dataset):
             moves.extend(moves_)
         return boards, moves
       
-    def load_games(path,limit=1000):
+    def load_games(self,path,limit=10):
         games = []
         with open(path) as pgn_file:
-            for _ in range(limit):
+            while True:
                 game = chess.pgn.read_game(pgn_file)
                 if game is None:
                     break
