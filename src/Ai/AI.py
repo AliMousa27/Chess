@@ -4,6 +4,11 @@ import torch
 import torch.nn as nn
 import chess.pgn
 from torch import optim
+from torch.utils.data import Dataset
+
+from Ai.data_handler import ChessDataset
+
+
 class ChessModel(nn.Module):
     def __init__(self):
         super(ChessModel, self).__init__()
@@ -17,24 +22,22 @@ class ChessModel(nn.Module):
         
         self.dropout = nn.Dropout(p=0.3)
         
-        self.pool = nn.MaxPool2d(kernel_size=2, stride=2,padding=0)
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
         
         self.relu = nn.ReLU()
-        self.lin1= nn.Linear(256*1*1, 256)
-        #64x64 output to represent the all possible from and to squares
+        self.global_pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.lin1 = nn.Linear(256, 256)
         self.lin2 = nn.Linear(256, 64*64)
         
-    def forward(self, x:torch.Tensor):
-        # Forward pass through convolutional layers with batch normalization and ReLU
-        x = self.pool(self.relu((self.conv1(x))))
-        x = self.pool(self.relu((self.conv2(x))))
-        x = self.pool(self.relu((self.conv3(x))))
-        # Flatten the output to pass it to the fully connected layers
-        x = x.view(-1, 256*1*1)
-        # Forward pass through fully connected layers with ReLU and Dropout
-        x = self.relu(self.lin1(x)) 
-        x=self.dropout(x)
-        # Forward pass through the output layer with sigmoid activation function to get probabilities
+    def forward(self, x: torch.Tensor):
+        x = self.relu(self.bn1(self.conv1(x)))
+        x = self.pool(x)
+        x = self.relu(self.bn2(self.conv2(x)))
+        x = self.pool(x)
+        x = self.relu(self.bn3(self.conv3(x)))
+        x = self.global_pool(x)
+        x = x.view(-1, 256)
+        x = self.dropout(self.relu(self.lin1(x)))
         x = torch.sigmoid(self.lin2(x))
         
         return x
@@ -75,7 +78,8 @@ def decode_move(encoded_move: np.array, board: chess.Board) -> chess.Move:
     for move in legal_moves:
         encoded_legal_moves[move.from_square * 64 + move.to_square] = 1
 
-    # Multiply the encoded move with encoded_legal_moves to keep only legal moves
+    # Multiply the encoded move with encoded_legal_moves to keep only legal moves by setting illegal moves to 0
+    #then taking the most likely probable move the ai thinks is best
     encoded_move = np.multiply(encoded_move, encoded_legal_moves)
 
     # If all encoded move elements are 0, return None indicating no legal move found
@@ -88,40 +92,38 @@ def decode_move(encoded_move: np.array, board: chess.Board) -> chess.Move:
 
 
 
-# Assuming the rest of the code and necessary imports are already in place
-def load_games(path,limit=5000):
-        games = []
-        with open(path) as pgn_file:
-            for _ in range(limit):
-                game = chess.pgn.read_game(pgn_file)
-                if game is None:
-                    break
-                games.append(game)
-        return games
-
-def train(model, games_dataset, criterion, optimizer, num_epochs, device):
+def train(model, dataloader, criterion, optimizer, num_epochs, device):
     model.to(device)
+    scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+    
     for epoch in range(num_epochs):
-        for game in games_dataset:
-            board = chess.Board()
-            for move in game.mainline_moves():
-                board_tensor = model.board_to_tensor(board).unsqueeze(0).to(device)  
-
-                target_vector = torch.tensor(encode_move(move), dtype=torch.float32).unsqueeze(0).to(device) 
-                optimizer.zero_grad()
-
-                output = model(board_tensor)
-
-                loss = criterion(output, target_vector)
-
-                loss.backward()
-                optimizer.step()
-                    
-
-                print(f"Epoch {epoch}, Loss: {loss.item()}")
-
-                board.push(move)
-
+        total_loss = 0.0
+        #we iterate over each board with the corrrepsond move made at that board state
+        for boards, moves in dataloader:
+            optimizer.zero_grad()
+            batch_boards = []
+            batch_targets = []
+            for board_fen, move in zip(boards, moves):
+                board = chess.Board(board_fen)
+                #convert to tensor then add it to the batch
+                #unsqueeze adds another dim for the batch to be concatenated along later
+                board_tensor = model.board_to_tensor(board).unsqueeze(0).to(device)
+                batch_boards.append(board_tensor)
+                target_vector = torch.tensor(encode_move(move), dtype=torch.float32).unsqueeze(0).to(device)
+                batch_targets.append(target_vector)
+            #concatenate them to form a nx12x8x8 tensor where n is the number of states the game had
+            batch_boards = torch.cat(batch_boards)
+            batch_targets = torch.cat(batch_targets)
+            #now this can be forwarded to the network
+            output = model(batch_boards)
+            loss = criterion(output, batch_targets)
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
+        
+        scheduler.step()
+        avg_loss = total_loss / len(dataloader)
+        print(f"Epoch {epoch+1}/{num_epochs}, Loss: {avg_loss:.4f}")
 
 
 path = __file__.replace("AI.py","data.pgn")
@@ -131,16 +133,17 @@ model = ChessModel()
 criterion = nn.BCELoss()  
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-games_dataset=load_games(path)
+games_dataset = ChessDataset(path)
 
 
-train( model,games_dataset, criterion, optimizer, num_epochs=20, device=device)
+train( model,games_dataset, criterion, optimizer, num_epochs=50, device=device)
+model._save_to_state_dict("model.pth")
+test_game = games_dataset.games[0]
 
-test_game = games_dataset[0]
 board = chess.Board()
 for move in test_game.mainline_moves():
     board_tensor = model.board_to_tensor(board).unsqueeze(0).to(device)
-    output = model(board_tensor)
+    output:torch.Tensor = model(board_tensor)
     decoded_move = decode_move(output.cpu().detach().numpy()[0], board)
 
     if decoded_move is None:
