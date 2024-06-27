@@ -1,13 +1,16 @@
-from math import e
 import chess
 import numpy as np
 import torch
+from torch import sigmoid
+from torch import Tensor
 import torch.nn as nn
 import chess.pgn
 from torch import optim
-from torch.utils.data import Dataset
 import time
 from data_handler import ChessDataset
+
+
+
 
 
 class ChessModel(nn.Module):
@@ -65,9 +68,6 @@ class ChessModel(nn.Module):
         #return a tensor of the board_matrix and change 8 8 12 to 12 8 8 to represent pieces on the board
         return torch.tensor(board_matrix, dtype=torch.float32).permute(2, 0, 1) 
 
-model = torch.load(__file__.replace("AI.py","model.pth"))
-print(f"Model loaded: {model}")
-
 
 
 def encode_move(move: chess.Move) -> np.array:
@@ -105,24 +105,17 @@ def train(model, dataloader, criterion, optimizer, num_epochs, device):
     for epoch in range(num_epochs):
         total_loss = 0.0
         #we iterate over each board with the corrrepsond move made at that board state
-        for boards, moves in dataloader:
+        for board, best_move in dataloader:
+            if board is None or best_move is None:
+                continue
             optimizer.zero_grad()
-            batch_boards = []
-            batch_targets = []
-            for board_fen, move in zip(boards, moves):
-                board = chess.Board(board_fen)
-                #convert to tensor then add it to the batch
-                #unsqueeze adds another dim for the batch to be concatenated along later
-                board_tensor = model.board_to_tensor(board).unsqueeze(0).to(device)
-                batch_boards.append(board_tensor)
-                target_vector = torch.tensor(encode_move(move), dtype=torch.float32).unsqueeze(0).to(device)
-                batch_targets.append(target_vector)
+            #unsqueeze adds another dim for the batch to be concatenated along later
+            board_tensor = model.board_to_tensor(board).unsqueeze(0).to(device)
+            target_vector = torch.tensor(encode_move(best_move), dtype=torch.float32).unsqueeze(0).to(device)
             #concatenate them to form a nx12x8x8 tensor where n is the number of states the game had
-            batch_boards = torch.cat(batch_boards)
-            batch_targets = torch.cat(batch_targets)
             #now this can be forwarded to the network
-            output = model(batch_boards)
-            loss = criterion(output, batch_targets)
+            output = model(board_tensor)
+            loss = criterion(output, target_vector)
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
@@ -132,9 +125,14 @@ def train(model, dataloader, criterion, optimizer, num_epochs, device):
         print(f"Epoch {epoch+1}/{num_epochs}, Loss: {avg_loss:.4f}")
 
 
-data_path = __file__.replace("AI.py","data.pgn")
+data_path = __file__.replace("AI.py","better_data.jsonl")
+model_to_save_path = __file__.replace("AI.py","model.pth")
 
 model = ChessModel()
+
+#model=torch.load(r"c:\Users\k876y\OneDrive\Desktop\chess\src\Ai\model.pth")
+
+
 #binary cross entropy loss
 criterion = nn.BCELoss()  
 optimizer = optim.Adam(model.parameters(), lr=0.001)
@@ -145,24 +143,6 @@ games_dataset = ChessDataset(data_path)
 end_time=time.time()
 print(f"Time taken to load the dataset is {end_time-start_time}")
 
-train( model,games_dataset, criterion, optimizer, num_epochs=2, device=device)
-torch.save(model, "model.pth")
-#model=torch.load(r"c:\Users\k876y\OneDrive\Desktop\chess\src\Ai\model.pth")
-test_game = games_dataset.games[0]
-
-board = chess.Board()
-for move in test_game.mainline_moves():
-    board_tensor = model.board_to_tensor(board).unsqueeze(0).to(device)
-    output:torch.Tensor = model(board_tensor)
-    decoded_move = decode_move(output.cpu().detach().numpy()[0], board)
-
-    if decoded_move is None:
-        print("Illegal move detected. Skipping.")
-        continue
-    
-    # Check if the decoded move is legal on the current board
-    if decoded_move in board.legal_moves:
-        print(f"Predicted move: {decoded_move}, Actual move: {move}")
-        board.push(decoded_move)
-    else:
-        print(f"Invalid move predicted: {decoded_move}. Skipping.")
+train( model,games_dataset, criterion, optimizer, num_epochs=10, device=device)
+torch.save(model, model_to_save_path)
+print("Model saved")
