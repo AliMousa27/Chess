@@ -4,7 +4,6 @@ from torch.utils.data import Dataset
 import json
 class ChessDataset(Dataset):
     def __init__(self, path:str):
-        print(f"The path is {path}")
         self.games = self.load_games(path)
     
     def __len__(self):
@@ -36,12 +35,13 @@ class ChessDataset(Dataset):
             moves.extend(moves_)
         return boards, moves'''
       
-    def load_games(self,file_path,limit=100000):
+    def load_games(self,file_path,limit=10):
         games = []  
+        print("loading dataset")
         with open(file_path, 'r') as file:
             for i, line in enumerate(file):
                 if i >=limit: 
                     break
                 games.append(json.loads(line))
+        print("dataset loaded")
         return games
-    
