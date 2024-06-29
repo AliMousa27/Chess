@@ -145,7 +145,7 @@ def train(model, criterion, optimizer, num_epochs, device):
     
     try:
         model, optimizer, start_epochs, line_index, loss = load_checkpoint(model, optimizer, model_to_save_path)
-        print(f"Model loaded from {model_to_save_path}. Starting from epoch {num_epochs}, line {line_index}, loss {loss}")
+        print(f"Model loaded from {model_to_save_path}. Starting from epoch {start_epochs}, line {line_index}, loss {loss}")
     except FileNotFoundError:
         print("No checkpoint found, starting from scratch")
         line_index = 0
