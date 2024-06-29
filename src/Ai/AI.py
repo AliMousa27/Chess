@@ -1,4 +1,5 @@
 import json
+import threading
 import chess
 import numpy as np
 import torch
@@ -9,7 +10,8 @@ import time
 from data_handler import ChessDataset
 
 
-
+data_path = __file__.replace("AI.py","better_data.jsonl")
+model_to_save_path = __file__.replace("AI.py","checkpoint.pth")
 
 
 class ResidualBlock(nn.Module):
@@ -132,37 +134,90 @@ def get_bestmove_and_board( game):
         to_square = chess.parse_square(best_line[2:4])
 
         return board, chess.Move(from_square, to_square)
-
-def train(model, dataloader, criterion, optimizer, num_epochs, device):
+def train(model, criterion, optimizer, num_epochs, device):
     model.to(device)
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
     print(f"Using device: {device}")
-    for epoch in range(num_epochs):
+    
+    stop_training_flag = threading.Event()
+    input_thread = threading.Thread(target=monitor_input, args=(stop_training_flag,))
+    input_thread.start()
+    
+    try:
+        model, optimizer, start_epochs, line_index, loss = load_checkpoint(model, optimizer, model_to_save_path)
+        print(f"Model loaded from {model_to_save_path}. Starting from epoch {num_epochs}, line {line_index}, loss {loss}")
+    except FileNotFoundError:
+        print("No checkpoint found, starting from scratch")
+        line_index = 0
+        start_epochs = 0
+        loss = 0.0
+    
+    avg_loss = 0.0
+    for epoch in range(start_epochs,num_epochs):
+        if stop_training_flag.is_set():
+            print("Quitting training...")
+            break
+        start_time = time.time()
         total_loss = 0.0
-        #we iterate over each board with the corrrepsond move made at that board state
+        
         with open(r"C:\Users\Jafar\Downloads\better_data.jsonl", 'r') as file:
             for i, line in enumerate(file):
+                if stop_training_flag.is_set():
+                    print("Quitting training...")
+                    save_checkpoint(model, optimizer, model_to_save_path, epoch, i, loss)
+                    break
+                if i < line_index:
+                    continue
                 board, best_move = get_bestmove_and_board(json.loads(line))
                 if board is None or best_move is None:
                     continue
                 optimizer.zero_grad()
-                #unsqueeze adds another dim for the batch to be concatenated along later
                 board_tensor = model.board_to_tensor(board).unsqueeze(0).to(device)
                 target_vector = torch.tensor(encode_move(best_move), dtype=torch.float32).unsqueeze(0).to(device)
-                #now this can be forwarded to the network
                 output = model(board_tensor)
                 loss = criterion(output, target_vector)
                 loss.backward()
                 optimizer.step()
                 total_loss += loss.item()
+                if i % 1000 == 0:
+                    avg_loss = total_loss / (i + 1)
+                    print(f"Epoch {epoch}/{num_epochs}, I: {i}, Loss: {avg_loss:.4f}")
+                    
+            scheduler.step()
+            avg_loss = total_loss / (i + 1)
+            end_time = time.time()
+            print(f"Epoch {epoch}/{num_epochs}, Loss: {avg_loss:.4f}. Time taken: {end_time-start_time:.2f}s")
             
-        scheduler.step()
-        avg_loss = total_loss / i
-        print(f"Epoch {epoch+1}/{num_epochs}, Loss: {avg_loss:.4f}")
+            
 
 
-data_path = __file__.replace("AI.py","better_data.jsonl")
-model_to_save_path = __file__.replace("AI.py","model.pth")
+                
+def save_checkpoint(model, optimizer, path, epoch,line_index,loss):
+    torch.save({
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'epoch': epoch,
+        'line_index':line_index,
+        'loss':loss
+    }, path)
+    print(f"Checkpoint saved to {path}. Epoch: {epoch}, Line: {line_index}, Loss: {loss}")
+
+def load_checkpoint(model, optimizer, path):
+    checkpoint = torch.load(path)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    epoch = checkpoint['epoch']
+    line_index = checkpoint['line_index']
+    loss = checkpoint['loss']
+    print(f"Checkpoint loaded from {path}. Epoch: {epoch}, Line: {line_index}, Loss: {loss}")
+    return model, optimizer, epoch, line_index, loss
+
+
+def monitor_input(stop_training_flag):
+    while True:
+        if input() == 'quit':
+            stop_training_flag.set()
+            break
 
 model = ChessModel()
 
@@ -174,11 +229,11 @@ criterion = nn.BCELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-start_time = time.time()
-games_dataset = ChessDataset(r"C:\Users\Jafar\Downloads\better_data.jsonl")
-end_time=time.time()
-print(f"Time taken to load the dataset is {end_time-start_time}")
+#start_time = time.time()
+#games_dataset = ChessDataset(r"C:\Users\Jafar\Downloads\better_data.jsonl")
+#end_time=time.time()
+#print(f"Time taken to load the dataset is {end_time-start_time}")
 
-train( model,games_dataset, criterion, optimizer, num_epochs=10, device=device)
-torch.save(model, model_to_save_path)
-print("Model saved")
+train( model, criterion, optimizer,10, device)
+
+print("end of training")
