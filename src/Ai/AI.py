@@ -84,6 +84,7 @@ def train(model, criterion, optimizer, num_epochs, device,dataloader):
     print(f"Using device: {device}")
     
     i =0
+    start_time = time.time()
     for epoch in range(num_epochs):
 
         total_loss = 0.0
@@ -99,14 +100,19 @@ def train(model, criterion, optimizer, num_epochs, device,dataloader):
                 board_tensor = model.board_to_tensor(chess.Board(board_fen[0])).unsqueeze(0).to(device)
                 output = model(board_tensor)
                 eval = eval.float().unsqueeze(0).to(device)
-                loss = criterion(output, eval)
+                normalized_output = normalize(output)
+                normalized_eval = normalize(eval)
+                loss = criterion(normalized_output, normalized_eval)
                 loss.backward()
                 optimizer.step()
                 total_loss += loss.item()
                 i+=1
-                if i % 1000 == 0:
-                    print(f"Epoch {epoch}/{num_epochs}, average loss: {total_loss / i:.4f}.")
-        print(f"Epoch {epoch}/{num_epochs}, average loss: {total_loss / i:.4f}.")
+                if i % 10000 == 0:
+                    print(f"Epoch {epoch}/{num_epochs}, average loss: {total_loss / i:.4f} Date entry number {i} out of {len(data_loader)}.")
+                    print(f"normalized output: {normalized_output}, normalized eval: {normalized_eval}")
+                    print(f"output: {output}, eval: {eval}")
+                    print()
+        print(f"Epoch {epoch}/{num_epochs}, average loss: {total_loss / i:.4f}. Time taken {time.time()-start_time} seconds.")
         scheduler.step()
             
             
@@ -140,8 +146,12 @@ def monitor_input(stop_training_flag):
             stop_training_flag.set()
             break
 
-data_loader = DataLoader(ChessDataset(r"C:\Users\Jafar\Desktop\Chess\evals.json"), batch_size=1, shuffle=False)
+def normalize(x, max_val=1557, min_val=-1598, dtype=torch.float):
+    normalized_0_1 = (x - min_val) / (max_val - min_val)  
+    return normalized_0_1 * 2 - 1 
 
+
+data_loader = DataLoader(ChessDataset(r"C:\Users\Jafar\Desktop\Chess\evals.json"), batch_size=1, shuffle=False)
 
 model = ChessModel()
 
