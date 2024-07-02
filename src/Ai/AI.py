@@ -15,6 +15,8 @@ data_path = __file__.replace("AI.py", "better_data.jsonl")
 model_to_save_path = __file__.replace("AI.py", "checkpoint.pth")
 
 
+
+
 class SELayer(nn.Module):
     def __init__(self, channels, reduction=16):
         super(SELayer, self).__init__()
@@ -91,7 +93,7 @@ class ChessModel(nn.Module):
 
 def train(model, criterion, optimizer, num_epochs, device, dataloader):
     model.to(device)
-    scheduler = optim.lr_scheduler.CyclicLR(optimizer, base_lr=1e-5, max_lr=1e-3, step_size_up=2000, mode='triangular2')
+    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[1, 2, 3], gamma=0.2)
 
     print(f"Using device: {device}")
 
@@ -103,19 +105,16 @@ def train(model, criterion, optimizer, num_epochs, device, dataloader):
             board_tensor = model.board_to_tensor(chess.Board(board_fen[0])).unsqueeze(0).to(device)
             output = model(board_tensor)
             eval = eval.float().unsqueeze(0).to(device)
-            normalized_output = normalize(output)
-            normalized_eval = normalize(eval)
-            loss = criterion(normalized_output, normalized_eval)
+            loss = criterion( output,  eval)
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
             scheduler.step()
+            print(f"Normalized output: {output.item()}, Normalized eval: {eval.item()}")
             if (i + 1) % 10000 == 0:
                 print(f"Epoch {epoch}/{num_epochs}, average loss: {total_loss / (i + 1):.4f}.")
                 print(f"Output: {output.item()}, Eval: {eval.item()}")
-                print(f"Normalized output: {normalized_output.item()}, Normalized eval: {normalized_eval.item()}")
                 print(f"Time taken {time.time() - start_time} seconds.\n")
-                
                 start_time = time.time()
         print(f"Epoch {epoch}/{num_epochs}, average loss: {total_loss / i:.4f}. Time taken {time.time()-start_time} seconds.")
         
@@ -155,19 +154,19 @@ def normalize(x, max_val=1557, min_val=-1598, dtype=torch.float):
     normalized_0_1 = (x - min_val) / (max_val - min_val)  
     return normalized_0_1 * 2 - 1 
 
-from stockfish import Stockfish
 data_loader = DataLoader(ChessDataset(r"C:\Users\Jafar\Desktop\Chess\evals.json"), batch_size=1, shuffle=False)
-stockfish = Stockfish(path=r"C:\Users\Jafar\Downloads\stockfish-windows-x86-64-avx2\stockfish\stockfish-windows-x86-64-avx2.exe")
 model = ChessModel()
-model.load_state_dict(torch.load(r"C:\Users\Jafar\Desktop\Chess\model.pth"))
 
-criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.0001)
+criterion = nn.L1Loss()
+optimizer = optim.Adam(model.parameters(), lr=0.003)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-train( model, criterion, optimizer,1, device,data_loader)
+train( model, criterion, optimizer,3, device,data_loader)
 torch.save(model.state_dict(), r"model.pth")
 print(f"saved")
 exit()
+
+from stockfish import Stockfish
+stockfish = Stockfish(path=r"C:\Users\Jafar\Downloads\stockfish-windows-x86-64-avx2\stockfish\stockfish-windows-x86-64-avx2.exe")
 
 
 def choose_best_move(model, board, choose_for_white=True):
