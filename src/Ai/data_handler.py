@@ -32,7 +32,12 @@ class ChessDataset(Dataset):
     def __len__(self) -> int:
         return len(self.data)
     def __getitem__(self, idx: int) -> Tuple[str, int]:
-        return self.data[idx]
+        fen,eval=self.data[idx]
+        if eval== 1:
+            eval =1600
+        elif eval==-1:
+            eval=-1600
+        return fen,eval
     
     def load_data(self,path: str) -> List[Tuple[str, int]]:
         with open(path, 'r') as json_file:

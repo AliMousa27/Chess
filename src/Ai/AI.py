@@ -11,10 +11,6 @@ import numpy as np
 import torch.nn.functional as F
 
 
-data_path = __file__.replace("AI.py", "better_data.jsonl")
-model_to_save_path = __file__.replace("AI.py", "checkpoint.pth")
-
-
 
 
 class SELayer(nn.Module):
@@ -93,123 +89,65 @@ class ChessModel(nn.Module):
 
 def train(model, criterion, optimizer, num_epochs, device, dataloader):
     model.to(device)
-    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[1, 2, 3], gamma=0.2)
-
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=0, verbose=True)
+    total_entries = len(dataloader.dataset)
     print(f"Using device: {device}")
-
     start_time = time.time()
     for epoch in range(num_epochs):
         total_loss = 0.0
-        for i, (board_fen, eval) in enumerate(dataloader):
+        processed_entries = 0
+        scheduler.step(total_loss)
+        for i, (board_fens, eval) in enumerate(dataloader):
             optimizer.zero_grad()
-            board_tensor = model.board_to_tensor(chess.Board(board_fen[0])).unsqueeze(0).to(device)
-            output = model(board_tensor)
-            eval = eval.float().unsqueeze(0).to(device)
+            board_tensors = torch.stack([model.board_to_tensor(chess.Board(fen)) for fen in board_fens]).to(device)
+            output = model(board_tensors)
+            eval = eval.float().view(-1,1).to(device)
             loss = criterion( output,  eval)
             loss.backward()
             optimizer.step()
             total_loss += loss.item()
-            scheduler.step()
-            print(f"Normalized output: {output.item()}, Normalized eval: {eval.item()}")
+           
+            processed_entries += len(board_fens)
+   
             if (i + 1) % 10000 == 0:
                 print(f"Epoch {epoch}/{num_epochs}, average loss: {total_loss / (i + 1):.4f}.")
-                print(f"Output: {output.item()}, Eval: {eval.item()}")
-                print(f"Time taken {time.time() - start_time} seconds.\n")
+                print(f"The ai output is {output} and the eval is {eval} and the loss is {loss}")
+                print(f"Processed {processed_entries}/{total_entries} Time taken {time.time() - start_time} seconds.\n")
                 start_time = time.time()
         print(f"Epoch {epoch}/{num_epochs}, average loss: {total_loss / i:.4f}. Time taken {time.time()-start_time} seconds.")
+        torch.save(model.state_dict(), r"model.pth")
+        print(f"saved model on epoch {epoch}")
+        scheduler.step(total_loss / len(dataloader))
         
-            
-            
-
-
-                
-def save_checkpoint(model, optimizer, path, epoch,line_index,loss):
-    torch.save({
-        'model_state_dict': model.state_dict(),
-        'optimizer_state_dict': optimizer.state_dict(),
-        'epoch': epoch,
-        'line_index':line_index,
-        'loss':loss
-    }, path)
-    print(f"Checkpoint saved to {path}. Epoch: {epoch}, Line: {line_index}, Loss: {loss}")
-
-def load_checkpoint(model, optimizer, path):
-    checkpoint = torch.load(path)
-    model.load_state_dict(checkpoint['model_state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    epoch = checkpoint['epoch']
-    line_index = checkpoint['line_index']
-    loss = checkpoint['loss']
-    print(f"Checkpoint loaded from {path}. Epoch: {epoch}, Line: {line_index}, Loss: {loss}")
-    return model, optimizer, epoch, line_index, loss
-
-
-def monitor_input(stop_training_flag):
-    while True:
-        if input() == 'quit':
-            stop_training_flag.set()
-            break
-
-def normalize(x, max_val=1557, min_val=-1598, dtype=torch.float):
-    normalized_0_1 = (x - min_val) / (max_val - min_val)  
-    return normalized_0_1 * 2 - 1 
-
-data_loader = DataLoader(ChessDataset(r"C:\Users\Jafar\Desktop\Chess\evals.json"), batch_size=1, shuffle=False)
+data_loader = DataLoader(ChessDataset(r"C:\Users\Jafar\Desktop\Chess\evals.json"), batch_size=10, shuffle=False)
 model = ChessModel()
-
-criterion = nn.L1Loss()
-optimizer = optim.Adam(model.parameters(), lr=0.003)
+model.load_state_dict(torch.load(r"model.pth"))
+criterion = nn.SmoothL1Loss()
+optimizer = optim.Adam(model.parameters(), lr=0.0001)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-train( model, criterion, optimizer,3, device,data_loader)
+train( model, criterion, optimizer,10, device,data_loader)
 torch.save(model.state_dict(), r"model.pth")
 print(f"saved")
 exit()
 
-from stockfish import Stockfish
-stockfish = Stockfish(path=r"C:\Users\Jafar\Downloads\stockfish-windows-x86-64-avx2\stockfish\stockfish-windows-x86-64-avx2.exe")
-
-
-def choose_best_move(model, board, choose_for_white=True):
-    best_move = None
-    best_eval = float('-inf') if choose_for_white else float('inf')
-
-    # Default to the first legal move in case no move improves the evaluation
-    if board.legal_moves:
-        best_move = next(iter(board.legal_moves))
-
-    for move in board.legal_moves:
-        board.push(move)
-        board_tensor = model.board_to_tensor(board).unsqueeze(0)
+def validate(model,data_loader):
+    model.eval()
+    total=0
+    corrects=0
+    for i, (board_fens, eval) in enumerate(data_loader):
+        if i == 10000:
+            break
+        total+=1
         with torch.no_grad():
-            evaluation = model(board_tensor).item()
-        board.pop()
-        if choose_for_white and evaluation > best_eval:
-            best_eval = evaluation
-            best_move = move
-        elif not choose_for_white and evaluation < best_eval:
-            best_eval = evaluation
-            best_move = move
-
-    return best_move
-
-def play_game(model):
-    board = chess.Board()
-    while not board.is_game_over():
-        print(board)
-        if board.turn:  # White's turn (AI)
-            print("AI is thinking...")
-            move = choose_best_move(model, board)
-            board.push(move)
-            print(f"AI plays: {move}")
-        else:  # Black's turn (Player)
-            print("AI is thinking...")
-            move = choose_best_move(model, board,False)
-            board.push(move)
-            print(f"AI plays: {move}")
-
-    print("Game over")
-    print("Result:", board.result())
-
-# Play the game
-play_game(model)
-
+            board_tensor = model.board_to_tensor(chess.Board(board_fens[0]))
+            output = model(board_tensor.unsqueeze(0)).item()
+            print(f"The ai output is {output} and the eval is {eval}")
+        if output >= 0:
+            lower_bound = output * 0.8  
+            upper_bound = output * 1.2  
+        else:
+            lower_bound = output * 1.2  
+            upper_bound = output * 0.8   
+        if lower_bound <= eval <= upper_bound:
+            corrects += 1
+        print(f"Accuracy: {corrects / total * 100:.2f}%")
