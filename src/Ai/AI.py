@@ -1,3 +1,8 @@
+#IMPORTANT: The AI is not good enough. I have trained it and validated it against stockfish and it played at about a player with elo of 1000. Therefore i will move to implement a
+#traditional minimax algorithm with alpha beta pruning. If you can spot the mistake thats making the model converge way earlier than it should 
+#(it should ideally converge with absoulte loss of at most 20 but its converging at 50) kindly let me know.
+
+
 import chess
 import torch
 import torch.nn as nn
@@ -8,6 +13,7 @@ from torch.utils.data import DataLoader
 import numpy as np
 import torch.nn.functional as F
 from stockfish import Stockfish
+
 class ConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=1, padding=1):
         super(ConvBlock, self).__init__()
