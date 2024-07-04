@@ -35,13 +35,13 @@ class ChessDataset(Dataset):
         fen,eval=self.data[idx]
         if eval== 1:
             eval =1600
-        elif eval==-1:
-            eval=-1600
         return fen,eval
     
     def load_data(self,path: str) -> List[Tuple[str, int]]:
         with open(path, 'r') as json_file:
-            return json.load(json_file)
+            data = json.load(json_file)
+            filtered_data = [(fen, eval) for fen, eval in data if eval >= 0]
+            return filtered_data
 
 
             
